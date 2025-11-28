@@ -119,8 +119,8 @@ export default function Profile(){
       const { error } = await supabase.from('profiles').upsert(payload)
       if(error) throw error
 
-      // update local profile
-      setProfile(prev => ({ ...prev, name: nameEdit, level: levelEdit, goal: goalEdit, avatar_url: uploadedUrl || prev.avatar_url }))
+      // update local profile (guard prev when null)
+      setProfile(prev => ({ ...(prev || {}), name: nameEdit, level: levelEdit, goal: goalEdit, avatar_url: uploadedUrl || prev?.avatar_url || null }))
       setAvatarFile(null)
       if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
       setEditing(false)
@@ -145,7 +145,7 @@ export default function Profile(){
       const { error } = await supabase.from('profiles').upsert(payload)
       if(error) throw error
 
-      setProfile(prev => ({ ...prev, [field]: value }))
+      setProfile(prev => ({ ...(prev || {}), [field]: value }))
       setEditingField(null)
     }catch(e){
       console.error('Update field error', e)
@@ -158,19 +158,27 @@ export default function Profile(){
     navigate('/login')
   }
 
-  if(loading) return <div className="p-4">Caricamento profilo...</div>
-  if(error) return <div className="p-4 text-red-600">Errore: {error}</div>
+  const displayName = profile?.name ?? 'Utente'
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=EDE9FE&color=5B21B6&size=128`
 
-  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=EDE9FE&color=5B21B6&size=128`
+  const isLoading = loading
+  const hasError = Boolean(error)
 
   return (
     <div className="p-4 flex-1">
       <h1 className="text-xl font-semibold mb-3">Profilo</h1>
 
+      {isLoading && (
+        <div className="p-3 mb-4 bg-yellow-50 text-yellow-800 rounded">Caricamento profilo…</div>
+      )}
+      {hasError && (
+        <div className="p-3 mb-4 bg-red-50 text-red-700 rounded">Errore: {error}</div>
+      )}
+
       <div className="md-card p-4 mb-4 flex flex-wrap items-center gap-4">
-        <div className="relative">
+          <div className="relative">
           <div onClick={onAvatarClick} className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl text-gray-700 overflow-hidden cursor-pointer">
-            <img src={previewUrl || profile.avatar_url || defaultAvatar} alt="avatar" className="w-full h-full object-cover" />
+            <img src={previewUrl || profile?.avatar_url || defaultAvatar} alt="avatar" className="w-full h-full object-cover" />
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
         </div>
@@ -179,21 +187,21 @@ export default function Profile(){
           {editing ? (
             <input value={nameEdit} onChange={e=>setNameEdit(e.target.value)} className="text-lg font-semibold w-full p-1 border-b" />
           ) : (
-            <div className="text-lg font-semibold">{profile.name}</div>
+            <div className="text-lg font-semibold">{profile?.name ?? displayName}</div>
           )}
 
-          <div className="text-sm text-gray-500 flex items-center gap-2"><span className="material-symbols-outlined text-sm">email</span>{profile.email}</div>
-          <div className="text-sm text-gray-500 mt-1">Iscritto: {new Date(profile.joined).toLocaleDateString()}</div>
+          <div className="text-sm text-gray-500 flex items-center gap-2"><span className="material-symbols-outlined text-sm">email</span>{profile?.email ?? ''}</div>
+          <div className="text-sm text-gray-500 mt-1">Iscritto: {profile?.joined ? new Date(profile.joined).toLocaleDateString() : '-'}</div>
         </div>
 
         <div className="w-full sm:w-auto">
           {editing ? (
             <div className="flex flex-col sm:flex-row gap-2 items-end">
               <button onClick={onSave} disabled={saving} className="px-3 py-2 bg-primary text-white rounded-md">{saving ? 'Salvataggio...' : 'Salva'}</button>
-              <button onClick={()=>{ setEditing(false); setNameEdit(profile.name); setLevelEdit(profile.level); setGoalEdit(profile.goal); setAvatarFile(null); if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }} className="px-3 py-2 bg-gray-100 rounded-md">Annulla</button>
+              <button onClick={()=>{ setEditing(false); setNameEdit(profile?.name ?? nameEdit); setLevelEdit(profile?.level ?? levelEdit); setGoalEdit(profile?.goal ?? goalEdit); setAvatarFile(null); if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }} className="px-3 py-2 bg-gray-100 rounded-md">Annulla</button>
             </div>
           ) : (
-            <button onClick={()=>setEditing(true)} className="px-3 py-2 bg-gray-100 rounded-md flex items-center gap-2">
+            <button onClick={()=>setEditing(true)} className="px-3 py-2 bg-gray-100 rounded-md flex items-center gap-2" disabled={isLoading}>
               <span className="material-symbols-outlined">edit</span>
               <span className="text-sm">Modifica</span>
             </button>
@@ -202,7 +210,7 @@ export default function Profile(){
       </div>
 
       <div className="space-y-3">
-        <div role="button" onClick={()=>{ if(!editingField) { setEditingField('level'); setLevelEdit(profile.level) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
+        <div role="button" onClick={()=>{ if(!editingField) { setEditingField('level'); setLevelEdit(profile?.level ?? levelEdit) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined">fitness_center</span>
             <div>
@@ -215,17 +223,17 @@ export default function Profile(){
                     <option>Avanzato</option>
                   </select>
                   <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('level', levelEdit) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                  <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setLevelEdit(profile.level) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
+                  <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setLevelEdit(profile?.level ?? levelEdit) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
                 </div>
-              ) : (
-                <div className="font-medium">{profile.level}</div>
+                ) : (
+                <div className="font-medium">{profile?.level ?? 'Neofita'}</div>
               )}
             </div>
           </div>
           <div className="text-gray-400">{editingField === 'level' ? '' : '>'}</div>
         </div>
 
-        <div role="button" onClick={()=>{ if(!editingField) { setEditingField('goal'); setGoalEdit(profile.goal) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
+        <div role="button" onClick={()=>{ if(!editingField) { setEditingField('goal'); setGoalEdit(profile?.goal ?? goalEdit) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined">schedule</span>
             <div>
@@ -234,10 +242,10 @@ export default function Profile(){
                 <div className="flex items-center gap-2">
                   <input value={goalEdit} onChange={e=>setGoalEdit(e.target.value)} className="font-medium" />
                   <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('goal', goalEdit) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                  <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setGoalEdit(profile.goal) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
+                  <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setGoalEdit(profile?.goal ?? goalEdit) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
                 </div>
               ) : (
-                <div className="font-medium">{profile.goal}</div>
+                <div className="font-medium">{profile?.goal ?? '30 min/die'}</div>
               )}
             </div>
           </div>
@@ -263,11 +271,11 @@ export default function Profile(){
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('notifications', notificationsEnabled) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                    <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setNotificationsEnabled(profile.notifications ?? true) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
+                    <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setNotificationsEnabled(profile?.notifications ?? notificationsEnabled) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
                   </div>
                 </div>
               ) : (
-                <div className="font-medium">{notificationsEnabled ? 'Attive' : 'Disattivate'}</div>
+                <div className="font-medium">{(profile?.notifications ?? notificationsEnabled) ? 'Attive' : 'Disattivate'}</div>
               )}
             </div>
           </div>
