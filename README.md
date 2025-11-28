@@ -1,3 +1,34 @@
+# WellGym — Web PWA (Vite + React + Tailwind + Supabase)
+
+Progetto scaffold per una web-app mobile-first chiamata WellGym.
+
+Prerequisiti
+- Node >=16
+
+Setup (PowerShell):
+
+```powershell
+cd c:\A5
+npm install
+```
+
+Env vars (create a `.env` file or set env when running):
+
+- `VITE_SUPABASE_URL` — your Supabase URL
+- `VITE_SUPABASE_ANON_KEY` — anon public key
+
+Run dev server:
+
+```powershell
+npm run dev
+```
+
+Note rapide
+- Il progetto include pagine: `Login`, `Register`, `Home`, `Workout`, `Progress`, `Profile`.
+- Per salvare dati è necessario creare una tabella `workouts` in Supabase con colonne: `id, user_id, exercise, duration, reps, performed_at`.
+- È presente un `manifest.json` e un `service-worker.js` minimale per PWA.
+
+
 # Assignment A5 – Prototipo High-Fidelity e Test di Usabilità
 
 Questo repository contiene il lavoro relativo all’Assignment A5, che prevede lo sviluppo di un **prototipo interattivo ad alta fedeltà (hi-fi)** realizzato tramite codice, seguito dalla conduzione di un **test di usabilità** con utenti appartenenti al target previsto.
