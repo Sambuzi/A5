@@ -1,9 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+/* Material Symbols (Material3) icons webfont */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-body { @apply bg-gray-50 text-gray-900; }
+:root{
+	--md-sys-color-primary: #6750A4;
+	--md-sys-color-on-primary: #FFFFFF;
+	--md-sys-color-primary-container: #EADDFF;
+	--md-sys-color-surface: #FFFFFF;
+	--md-sys-color-background: #F7F3FF;
+	--md-sys-radius: 16px;
+}
 
-/* Make app take full-screen on mobile */
-.app-full { min-height: 100vh; display: flex; flex-direction: column; }
+@layer base{
+	html, body, #root { height: 100%; }
+	body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--md-sys-color-background); color: #111827; }
+	.app-full { min-height: 100vh; display: flex; flex-direction: column; }
+}
+
+/* Material3 small elevation helpers */
+.elev-1 { box-shadow: 0 1px 2px rgba(16,24,40,0.06), 0 1px 3px rgba(16,24,40,0.04); }
+.elev-2 { box-shadow: 0 6px 18px rgba(16,24,40,0.08); }
+
+.md-card { border-radius: var(--md-sys-radius); background: var(--md-sys-color-surface); }
+
+/* Material3 style switch (simple CSS) */
+.m3-switch {
+	display: inline-block;
+	width: 44px;
+	height: 28px;
+	border-radius: 9999px;
+	background: #e5e7eb;
+	position: relative;
+	cursor: pointer;
+	transition: background .18s ease;
+	flex-shrink: 0;
+}
+.m3-switch.on { background: var(--md-sys-color-primary); }
+.m3-switch .thumb {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 22px;
+	height: 22px;
+	border-radius: 9999px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(16,24,40,0.08), 0 1px 1px rgba(16,24,40,0.04);
+	transition: transform .18s cubic-bezier(.4,0,.2,1);
+}
+.m3-switch.on .thumb { transform: translateX(16px); }
+.m3-switch:focus-visible { outline: 2px solid rgba(99,102,241,0.32); outline-offset: 2px; }
+
+

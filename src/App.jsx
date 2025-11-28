@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Workout from './pages/Workout'
 import Progress from './pages/Progress'
 import Profile from './pages/Profile'
+import ProfileEdit from './pages/ProfileEdit'
 import { supabase } from './lib/supabaseClient'
 
 function RequireAuth({ children }){
@@ -23,6 +24,7 @@ export default function App(){
         <Route path="/workout" element={<Workout/>} />
         <Route path="/progress" element={<Progress/>} />
         <Route path="/profile" element={<Profile/>} />
+        <Route path="/profile/edit" element={<ProfileEdit/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
