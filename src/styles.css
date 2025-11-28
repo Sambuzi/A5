@@ -54,4 +54,13 @@
 .m3-switch.on .thumb { transform: translateX(16px); }
 .m3-switch:focus-visible { outline: 2px solid rgba(99,102,241,0.32); outline-offset: 2px; }
 
+/* App title styling */
+.app-title { display: flex; align-items: center; gap: 12px; }
+.app-header { display:flex; flex-direction:column; align-items:center; text-align:center; }
+.app-title .logo-badge { width:64px; height:64px; border-radius:14px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(103,80,164,0.12), rgba(233,221,255,0.06)); box-shadow: 0 4px 12px rgba(103,80,164,0.08); }
+.app-title .logo-badge img { width:48px; height:48px }
+.app-title .logo-badge .material-symbols-outlined { font-size:28px; color:var(--md-sys-color-primary); }
+.app-title .title-text { font-weight:800; font-size:2rem; letter-spacing: -0.02em; line-height:1; background: linear-gradient(90deg, var(--md-sys-color-primary), #9B6FEA); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 2px 6px rgba(107,33,182,0.08); }
+.app-title .title-sub { font-size:0.9rem; color: #6b7280; margin-top:4px; }
+
 

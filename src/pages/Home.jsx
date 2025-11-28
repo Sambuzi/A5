@@ -1,13 +1,21 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
+import logoUrl from '../assets/wellgym-logo.svg'
 
 export default function Home(){
   return (
     <div className="p-4 flex-1 min-h-screen" style={{background: 'var(--md-sys-color-background)'}}>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold">WellGym</h1>
-        <p className="text-sm text-gray-600">Allenati ovunque, salva i progressi</p>
+        <div className="app-title app-header">
+          <div className="logo-badge" aria-hidden>
+            <img src={logoUrl} alt="WellGym" style={{width:48, height:48, borderRadius:12}} />
+          </div>
+          <div>
+            <div className="title-text">WellGym</div>
+            <div className="title-sub">Allenati ovunque, salva i progressi</div>
+          </div>
+        </div>
       </header>
 
       <div className="grid gap-4">
