@@ -30,7 +30,13 @@ export default function ProfileDetails({
                             <button
                               key={l}
                               role="menuitem"
-                              onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('level', l) }}
+                              onClick={async (ev)=>{ 
+                                ev.stopPropagation();
+                                try{
+                                  await updateProfileField('level', l)
+                                }catch(e){ console.error(e) }
+                                setEditingField(null)
+                              }}
                               className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 ${profile?.level === l ? 'bg-gray-50 font-medium' : ''}`}
                             >
                               <span>{l}</span>
