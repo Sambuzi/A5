@@ -35,11 +35,11 @@ function Timer({ initialSeconds = 45, onComplete }){
       </div>
       <div className="flex items-center gap-2">
         {running ? (
-          <button className="px-3 py-2 bg-gray-200 rounded" onClick={()=>setRunning(false)}>Pausa</button>
+          <button className="px-3 py-2 bg-amber-500 text-white font-semibold rounded-md shadow-sm hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300" onClick={()=>setRunning(false)}>Pausa</button>
         ) : (
-          <button className="px-3 py-2 bg-primary text-white rounded" onClick={()=>setRunning(true)}>Avvia</button>
+          <button className="px-3 py-2 bg-green-600 text-white font-semibold rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300" onClick={()=>setRunning(true)}>Avvia</button>
         )}
-        <button className="px-3 py-2 bg-gray-100 rounded" onClick={reset}>Reset</button>
+        <button className="px-3 py-2 bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200" onClick={reset}>Reset</button>
       </div>
     </div>
   )
@@ -186,7 +186,7 @@ export default function Workout(){
             {message && <div className="mt-3 text-sm text-green-600">{message}</div>}
 
             <div className="mt-6 flex gap-2">
-              <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={()=>saveCompleted(0, current)}>Segna completato</button>
+              <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(0, current)}>Segna completato</button>
 
               {(() => {
                 const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
@@ -195,17 +195,20 @@ export default function Workout(){
 
                 if(!isLast){
                   return (
-                    <button className="px-4 py-2 bg-gray-100 rounded" onClick={()=>{
+                    <button aria-label="Successivo" className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 flex items-center gap-2" onClick={()=>{
                       const next = list[idx+1]
                       setSelected(next.id)
                       setReps(10)
                       setMessage(null)
-                    }}>Successivo</button>
+                    }}>
+                      <span className="material-symbols-outlined text-base leading-none">arrow_forward</span>
+                      <span>Successivo</span>
+                    </button>
                   )
                 }
 
                 return (
-                  <button className="px-4 py-2 bg-red-600 text-white rounded" onClick={()=>{
+                  <button aria-label="Termina allenamento" className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-200" onClick={()=>{
                     // finish the opened category/workout
                     setSelected(null)
                     setSelectedCategory(null)
@@ -213,8 +216,10 @@ export default function Workout(){
                   }}>Termina allenamento</button>
                 )
               })()}
-
-              <button className="px-4 py-2 bg-gray-100 rounded" onClick={()=>setSelected(null)}>Indietro</button>
+              <button aria-label="Indietro" className="px-4 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 flex items-center gap-2" onClick={()=>setSelected(null)}>
+                <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
+                <span>Indietro</span>
+              </button>
             </div>
           </div>
         )}
