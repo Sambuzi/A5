@@ -20,7 +20,16 @@ export default function Profile(){
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingField, setEditingField] = useState(null)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(()=>{
+    try{
+      const raw = sessionStorage.getItem(PROFILE_CACHE_KEY)
+      if(raw){
+        const cached = JSON.parse(raw)
+        return cached.notifications ?? true
+      }
+    }catch(e){}
+    return true
+  })
   const [avatarFile, setAvatarFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [nameEdit, setNameEdit] = useState('')
@@ -66,7 +75,7 @@ export default function Profile(){
 
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, level, goal')
+          .select('full_name, avatar_url, level, goal, notifications')
           .eq('id', user.id)
           .single()
 
@@ -170,6 +179,13 @@ export default function Profile(){
       setAvatarFile(null)
       if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
       setEditing(false)
+      // update session cache after a full save
+      try{
+        const cachedRaw = sessionStorage.getItem(PROFILE_CACHE_KEY)
+        const cached = cachedRaw ? JSON.parse(cachedRaw) : {}
+        const updated = { ...(cached || {}), name: nameEdit, level: levelEdit, goal: goalEdit, avatar_url: uploadedUrl || cached?.avatar_url || null }
+        sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(updated))
+      }catch(e){ /* ignore */ }
     }catch(e){
       console.error('Save error', e)
       setError(e.message || String(e))
@@ -192,6 +208,15 @@ export default function Profile(){
       if(error) throw error
 
       setProfile(prev => ({ ...(prev || {}), [field]: value }))
+      // if notifications changed, sync the toggle state immediately
+      if(field === 'notifications') setNotificationsEnabled(Boolean(value))
+      // update session cache so the change persists across navigations
+      try{
+        const cachedRaw = sessionStorage.getItem(PROFILE_CACHE_KEY)
+        const cached = cachedRaw ? JSON.parse(cachedRaw) : {}
+        const updated = { ...(cached || {}), [field]: value }
+        sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(updated))
+      }catch(e){ /* ignore storage errors */ }
       setEditingField(null)
     }catch(e){
       console.error('Update field error', e)
@@ -315,34 +340,38 @@ export default function Profile(){
           <div className="text-gray-400">{editingField === 'goal' ? '' : '>'}</div>
         </div>
 
-        <div role="button" onClick={()=>{ if(!editingField) { setEditingField('notifications') } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
+        <div className="bg-white p-3 rounded-md flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined">notifications</span>
             <div>
               <div className="text-sm text-gray-500">Notifiche</div>
-              {editingField === 'notifications' ? (
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`m3-switch ${notificationsEnabled ? 'on' : ''}`}
-                    tabIndex={0}
-                    role="switch"
-                    aria-checked={notificationsEnabled}
-                    onClick={(ev)=>{ ev.stopPropagation(); setNotificationsEnabled(v => !v); }}
-                    onKeyDown={(ev)=>{ if(ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setNotificationsEnabled(v => !v); } }}
-                  >
-                    <span className="thumb" aria-hidden="true"></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('notifications', notificationsEnabled) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                    <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setNotificationsEnabled(profile?.notifications ?? notificationsEnabled) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="font-medium">{(profile?.notifications ?? notificationsEnabled) ? 'Attive' : 'Disattivate'}</div>
-              )}
+              <div className="font-medium">{(profile?.notifications ?? notificationsEnabled) ? 'Attive' : 'Disattivate'}</div>
             </div>
           </div>
-          <div className="text-gray-400">{editingField === 'notifications' ? '' : '>'}</div>
+          <div>
+            <div
+              className={`m3-switch ${(profile?.notifications ?? notificationsEnabled) ? 'on' : ''}`}
+              tabIndex={0}
+              role="switch"
+              aria-checked={profile?.notifications ?? notificationsEnabled}
+              onClick={async (ev) => {
+                ev.stopPropagation()
+                const newVal = !(profile?.notifications ?? notificationsEnabled)
+                setNotificationsEnabled(newVal)
+                try{ await updateProfileField('notifications', newVal) }catch(e){ /* updateProfileField handles errors */ }
+              }}
+              onKeyDown={(ev) => {
+                if(ev.key === 'Enter' || ev.key === ' '){
+                  ev.preventDefault(); ev.stopPropagation();
+                  const newVal = !(profile?.notifications ?? notificationsEnabled)
+                  setNotificationsEnabled(newVal)
+                  updateProfileField('notifications', newVal)
+                }
+              }}
+            >
+              <span className="thumb" aria-hidden="true"></span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white p-3 rounded-md flex items-center justify-between">
