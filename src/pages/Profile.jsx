@@ -5,8 +5,17 @@ import AppBar from '../components/AppBar'
 import { useNavigate } from 'react-router-dom'
 
 export default function Profile(){
+  const PROFILE_LOADED_KEY = 'wellgym_profile_loaded_v1'
+  const PROFILE_CACHE_KEY = 'wellgym_profile_cache_v1'
+
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(()=>{
+    try{
+      return !sessionStorage.getItem(PROFILE_LOADED_KEY)
+    }catch(e){
+      return true
+    }
+  })
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -18,12 +27,32 @@ export default function Profile(){
   const [levelEdit, setLevelEdit] = useState('Neofita')
   const [goalEdit, setGoalEdit] = useState('30 min/die')
   const fileInputRef = useRef(null)
+  const levelPopRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(()=>{
     let mounted = true
+
+    // try to read cached profile and render immediately to avoid loading flash
+    try{
+      const raw = sessionStorage.getItem(PROFILE_CACHE_KEY)
+      if(raw){
+        const cached = JSON.parse(raw)
+        if(mounted){
+          setProfile(cached)
+          setNameEdit(cached.name)
+          setLevelEdit(cached.level)
+          setGoalEdit(cached.goal)
+          setNotificationsEnabled(cached.notifications ?? true)
+          // don't show global loading when we have cached data
+          setLoading(false)
+        }
+      }
+    }catch(e){/* ignore cache errors */}
     async function load(){
-      setLoading(true)
+      // Show loading banner only on first load in this session
+      const alreadyLoaded = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(PROFILE_LOADED_KEY)
+      if(!alreadyLoaded) setLoading(true)
       try{
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if(userErr) throw userErr
@@ -58,6 +87,7 @@ export default function Profile(){
           setLevelEdit(p.level)
           setGoalEdit(p.goal)
           setNotificationsEnabled(p.notifications)
+          try{ sessionStorage.setItem(PROFILE_LOADED_KEY, '1'); sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(p)) }catch(e){}
         }
       }catch(e){
         console.error('Profile load error', e)
@@ -73,6 +103,21 @@ export default function Profile(){
   useEffect(()=>{
     return ()=>{ if(previewUrl) URL.revokeObjectURL(previewUrl) }
   }, [previewUrl])
+
+  // click-outside handler to close level popover
+  useEffect(()=>{
+    if(editingField !== 'level') return
+    function onDocClick(e){
+      const el = levelPopRef.current
+      if(!el) return
+      if(!el.contains(e.target)){
+        setEditingField(null)
+        setLevelEdit(profile?.level ?? levelEdit)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return ()=> document.removeEventListener('mousedown', onDocClick)
+  }, [editingField, profile, levelEdit])
 
   function onAvatarClick(){
     if(fileInputRef.current) fileInputRef.current.click()
@@ -218,19 +263,34 @@ export default function Profile(){
             <span className="material-symbols-outlined">fitness_center</span>
             <div>
               <div className="text-sm text-gray-500">Livello</div>
-              {editingField === 'level' ? (
-                <div className="flex items-center gap-2">
-                  <select value={levelEdit} onChange={e=>setLevelEdit(e.target.value)} className="font-medium">
-                    <option>Neofita</option>
-                    <option>Intermedio</option>
-                    <option>Avanzato</option>
-                  </select>
-                  <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('level', levelEdit) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                  <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setLevelEdit(profile?.level ?? levelEdit) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
-                </div>
-                ) : (
-                <div className="font-medium">{profile?.level ?? 'Neofita'}</div>
-              )}
+                  {editingField === 'level' ? (
+                    <div className="relative" ref={levelPopRef}>
+                      <div className="font-medium">{profile?.level ?? 'Neofita'}</div>
+
+                      {/* Material3-style dropdown menu (anchored) */}
+                      <div className="absolute left-0 mt-2 w-56 z-50">
+                        <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+                          <div role="menu" aria-label="Seleziona livello" className="py-1">
+                            {['Neofita','Intermedio','Avanzato'].map(l => (
+                              <button
+                                key={l}
+                                role="menuitem"
+                                onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('level', l) }}
+                                className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 ${profile?.level === l ? 'bg-gray-50 font-medium' : ''}`}
+                              >
+                                <span>{l}</span>
+                                {profile?.level === l && (
+                                  <span className="material-symbols-outlined text-primary">check</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    ) : (
+                    <div className="font-medium">{profile?.level ?? 'Neofita'}</div>
+                  )}
             </div>
           </div>
           <div className="text-gray-400">{editingField === 'level' ? '' : '>'}</div>

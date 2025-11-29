@@ -1,15 +1,19 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
+import AppBar from '../components/AppBar'
 import logoUrl from '../assets/logo.png'
 
 export default function Home() {
   return (
     <div 
-      className="flex flex-col p-5 min-h-screen"
+      className="flex flex-col min-h-screen"
       style={{ background: 'var(--md-sys-color-background)' }}
     >
-    <header className="mb-10">
+    <AppBar title="Home" showBack={false} />
+
+    <div className="p-5">
+      <header className="mb-10 mt-3">
       <div className="flex items-center gap-4">
         <div className="rounded-2xl p-2 elev-2 bg-surface-variant w-24 h-24 flex items-center justify-center overflow-hidden">
           <img
@@ -46,10 +50,10 @@ export default function Home() {
               <span className="material-symbols-outlined text-3xl">play_arrow</span>
             </div>
             <div>
-              <h2 className="title-medium font-semibold">Avvia Allenamento</h2>
+              <h2 className="title-medium font-semibold">Allenamento</h2>
               <p className="body-small text-secondary">Esercizi guidati e personalizzati</p>
             </div>
-          </div>
+      </div>
           <span className="material-symbols-outlined text-secondary">chevron_right</span>
         </Link>
 
@@ -84,9 +88,26 @@ export default function Home() {
           </div>
           <span className="material-symbols-outlined text-secondary">chevron_right</span>
         </Link>
+        
+        <Link 
+          to="/community"
+          className="md-card p-5 rounded-[20px] elev-2 flex items-center justify-between bg-surface"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-3xl">forum</span>
+            </div>
+            <div>
+              <h2 className="title-medium font-semibold">Community</h2>
+              <p className="body-small text-secondary">Partecipa alla community, condividi e chiedi consigli</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-secondary">chevron_right</span>
+        </Link>
       </div>
-
+      
       <BottomNav />
+    </div>
     </div>
   )
 }

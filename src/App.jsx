@@ -8,6 +8,7 @@ import Progress from './pages/Progress'
 import Profile from './pages/Profile'
 import ProfileEdit from './pages/ProfileEdit'
 import Settings from './pages/Settings'
+import Community from './pages/Community'
 import { supabase } from './lib/supabaseClient'
 
 function RequireAuth({ children }){
@@ -27,6 +28,7 @@ export default function App(){
         <Route path="/profile" element={<Profile/>} />
         <Route path="/profile/edit" element={<ProfileEdit/>} />
         <Route path="/settings" element={<Settings/>} />
+        <Route path="/community" element={<Community/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
