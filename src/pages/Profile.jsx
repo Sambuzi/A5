@@ -2,6 +2,8 @@ import React, {useState, useEffect, useRef} from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
 import AppBar from '../components/AppBar'
+import ProfileHeader from '../components/profile/ProfileHeader'
+import NotificationsSwitch from '../components/profile/NotificationsSwitch'
 import { useNavigate } from 'react-router-dom'
 
 export default function Profile(){
@@ -248,39 +250,19 @@ export default function Profile(){
         <div className="p-3 mb-4 bg-red-50 text-red-700 rounded">Errore: {error}</div>
       )}
 
-      <div className="md-card p-4 mb-4 flex flex-wrap items-center gap-4">
-          <div className="relative">
-          <div onClick={onAvatarClick} className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl text-gray-700 overflow-hidden cursor-pointer">
-            <img src={previewUrl || profile?.avatar_url || defaultAvatar} alt="avatar" className="w-full h-full object-cover" />
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-        </div>
-
-        <div className="flex-1">
-          {editing ? (
-            <input value={nameEdit} onChange={e=>setNameEdit(e.target.value)} className="text-lg font-semibold w-full p-1 border-b" />
-          ) : (
-            <div className="text-lg font-semibold">{profile?.name ?? displayName}</div>
-          )}
-
-          <div className="text-sm text-gray-500 flex items-center gap-2"><span className="material-symbols-outlined text-sm">email</span>{profile?.email ?? ''}</div>
-          <div className="text-sm text-gray-500 mt-1">Iscritto: {profile?.joined ? new Date(profile.joined).toLocaleDateString() : '-'}</div>
-        </div>
-
-        <div className="w-full sm:w-auto">
-          {editing ? (
-            <div className="flex flex-col sm:flex-row gap-2 items-end">
-              <button onClick={onSave} disabled={saving} className="px-3 py-2 bg-primary text-white rounded-md">{saving ? 'Salvataggio...' : 'Salva'}</button>
-              <button onClick={()=>{ setEditing(false); setNameEdit(profile?.name ?? nameEdit); setLevelEdit(profile?.level ?? levelEdit); setGoalEdit(profile?.goal ?? goalEdit); setAvatarFile(null); if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }} className="px-3 py-2 bg-gray-100 rounded-md">Annulla</button>
-            </div>
-          ) : (
-            <button onClick={()=>setEditing(true)} className="px-3 py-2 bg-gray-100 rounded-md flex items-center gap-2" disabled={isLoading}>
-              <span className="material-symbols-outlined">edit</span>
-              <span className="text-sm">Modifica</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <ProfileHeader
+        profile={profile}
+        editing={editing}
+        nameEdit={nameEdit}
+        setNameEdit={setNameEdit}
+        onAvatarClick={onAvatarClick}
+        fileInputRef={fileInputRef}
+        previewUrl={previewUrl}
+        onFileChange={onFileChange}
+        onSave={onSave}
+        saving={saving}
+        onCancelEdit={()=>{ setEditing(false); setNameEdit(profile?.name ?? nameEdit); setLevelEdit(profile?.level ?? levelEdit); setGoalEdit(profile?.goal ?? goalEdit); setAvatarFile(null); if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }}
+      />
 
       <div className="space-y-3">
         <div role="button" onClick={()=>{ if(!editingField) { setEditingField('level'); setLevelEdit(profile?.level ?? levelEdit) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
@@ -340,39 +322,13 @@ export default function Profile(){
           <div className="text-gray-400">{editingField === 'goal' ? '' : '>'}</div>
         </div>
 
-        <div className="bg-white p-3 rounded-md flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined">notifications</span>
-            <div>
-              <div className="text-sm text-gray-500">Notifiche</div>
-              <div className="font-medium">{(profile?.notifications ?? notificationsEnabled) ? 'Attive' : 'Disattivate'}</div>
-            </div>
-          </div>
-          <div>
-            <div
-              className={`m3-switch ${(profile?.notifications ?? notificationsEnabled) ? 'on' : ''}`}
-              tabIndex={0}
-              role="switch"
-              aria-checked={profile?.notifications ?? notificationsEnabled}
-              onClick={async (ev) => {
-                ev.stopPropagation()
-                const newVal = !(profile?.notifications ?? notificationsEnabled)
-                setNotificationsEnabled(newVal)
-                try{ await updateProfileField('notifications', newVal) }catch(e){ /* updateProfileField handles errors */ }
-              }}
-              onKeyDown={(ev) => {
-                if(ev.key === 'Enter' || ev.key === ' '){
-                  ev.preventDefault(); ev.stopPropagation();
-                  const newVal = !(profile?.notifications ?? notificationsEnabled)
-                  setNotificationsEnabled(newVal)
-                  updateProfileField('notifications', newVal)
-                }
-              }}
-            >
-              <span className="thumb" aria-hidden="true"></span>
-            </div>
-          </div>
-        </div>
+        <NotificationsSwitch
+          notificationsEnabled={notificationsEnabled}
+          onToggle={async (val) => {
+            setNotificationsEnabled(val)
+            try{ await updateProfileField('notifications', val) }catch(e){ /* handled in updateProfileField */ }
+          }}
+        />
 
         <div className="bg-white p-3 rounded-md flex items-center justify-between">
           <div className="flex items-center gap-3">
