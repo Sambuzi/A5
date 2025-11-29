@@ -37,6 +37,10 @@ export default function Profile(){
   const [nameEdit, setNameEdit] = useState('')
   const [levelEdit, setLevelEdit] = useState('Neofita')
   const [goalEdit, setGoalEdit] = useState('30 min/die')
+  const [bioEdit, setBioEdit] = useState('')
+  const [prefDurationEdit, setPrefDurationEdit] = useState(30)
+  const [preferredCategoriesEdit, setPreferredCategoriesEdit] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
   const fileInputRef = useRef(null)
   const levelPopRef = useRef(null)
   const navigate = useNavigate()
@@ -77,7 +81,7 @@ export default function Profile(){
 
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, level, goal, notifications')
+          .select('full_name, avatar_url, level, goal, notifications, bio, preferred_duration, preferred_categories, is_public')
           .eq('id', user.id)
           .single()
 
@@ -89,6 +93,10 @@ export default function Profile(){
           level: profileRow?.level || 'Neofita',
           goal: profileRow?.goal || '30 min/die',
           notifications: profileRow?.notifications ?? true,
+          bio: profileRow?.bio || '',
+          preferred_duration: profileRow?.preferred_duration ?? 30,
+          preferred_categories: profileRow?.preferred_categories || '',
+          is_public: profileRow?.is_public ?? true,
           joined: user.created_at
         }
 
@@ -98,6 +106,10 @@ export default function Profile(){
           setLevelEdit(p.level)
           setGoalEdit(p.goal)
           setNotificationsEnabled(p.notifications)
+          setBioEdit(p.bio || '')
+          setPrefDurationEdit(p.preferred_duration || 30)
+          setPreferredCategoriesEdit(p.preferred_categories || '')
+          setIsPublic(Boolean(p.is_public))
           try{ sessionStorage.setItem(PROFILE_LOADED_KEY, '1'); sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(p)) }catch(e){}
         }
       }catch(e){
@@ -170,6 +182,10 @@ export default function Profile(){
         full_name: nameEdit,
         level: levelEdit,
         goal: goalEdit,
+        bio: bioEdit,
+        preferred_duration: Number(prefDurationEdit) || 30,
+        preferred_categories: preferredCategoriesEdit || '',
+        is_public: Boolean(isPublic),
       }
       if(uploadedUrl) payload.avatar_url = uploadedUrl
 
@@ -177,7 +193,7 @@ export default function Profile(){
       if(error) throw error
 
       // update local profile (guard prev when null)
-      setProfile(prev => ({ ...(prev || {}), name: nameEdit, level: levelEdit, goal: goalEdit, avatar_url: uploadedUrl || prev?.avatar_url || null }))
+      setProfile(prev => ({ ...(prev || {}), name: nameEdit, level: levelEdit, goal: goalEdit, bio: bioEdit, preferred_duration: Number(prefDurationEdit) || 30, preferred_categories: preferredCategoriesEdit || '', is_public: Boolean(isPublic), avatar_url: uploadedUrl || prev?.avatar_url || null }))
       setAvatarFile(null)
       if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
       setEditing(false)
@@ -185,7 +201,18 @@ export default function Profile(){
       try{
         const cachedRaw = sessionStorage.getItem(PROFILE_CACHE_KEY)
         const cached = cachedRaw ? JSON.parse(cachedRaw) : {}
-        const updated = { ...(cached || {}), name: nameEdit, level: levelEdit, goal: goalEdit, avatar_url: uploadedUrl || cached?.avatar_url || null }
+        const updated = { 
+          ...(cached || {}),
+          name: nameEdit,
+          level: levelEdit,
+          goal: goalEdit,
+          bio: bioEdit,
+          preferred_duration: Number(prefDurationEdit) || 30,
+          preferred_categories: preferredCategoriesEdit || '',
+          is_public: Boolean(isPublic),
+          notifications: notificationsEnabled,
+          avatar_url: uploadedUrl || cached?.avatar_url || null
+        }
         sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(updated))
       }catch(e){ /* ignore */ }
     }catch(e){
@@ -240,7 +267,7 @@ export default function Profile(){
   return (
     <div className="p-0 flex-1 min-h-0">
       <AppBar title="Profilo" />
-      <div className="p-4">
+      <div className="p-4 pb-24">
       <h1 className="text-xl font-semibold mb-3">Profilo</h1>
 
       {isLoading && (
@@ -261,7 +288,28 @@ export default function Profile(){
         onFileChange={onFileChange}
         onSave={onSave}
         saving={saving}
-        onCancelEdit={()=>{ setEditing(false); setNameEdit(profile?.name ?? nameEdit); setLevelEdit(profile?.level ?? levelEdit); setGoalEdit(profile?.goal ?? goalEdit); setAvatarFile(null); if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) } }}
+        onCancelEdit={()=>{ 
+          setEditing(false);
+          setNameEdit(profile?.name ?? nameEdit);
+          setLevelEdit(profile?.level ?? levelEdit);
+          setGoalEdit(profile?.goal ?? goalEdit);
+          setBioEdit(profile?.bio || '');
+          setPrefDurationEdit(profile?.preferred_duration || 30);
+          setPreferredCategoriesEdit(profile?.preferred_categories || '');
+          setIsPublic(Boolean(profile?.is_public));
+          setAvatarFile(null);
+          if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
+        }}
+        onEdit={()=>{ 
+          setEditing(true);
+          setNameEdit(profile?.name ?? nameEdit);
+          setLevelEdit(profile?.level ?? levelEdit);
+          setGoalEdit(profile?.goal ?? goalEdit);
+          setBioEdit(profile?.bio || '');
+          setPrefDurationEdit(profile?.preferred_duration || 30);
+          setPreferredCategoriesEdit(profile?.preferred_categories || '');
+          setIsPublic(Boolean(profile?.is_public));
+        }}
       />
 
       <div className="space-y-3">
@@ -329,6 +377,71 @@ export default function Profile(){
             try{ await updateProfileField('notifications', val) }catch(e){ /* handled in updateProfileField */ }
           }}
         />
+
+          {/* Bio */}
+          <div className="bg-white p-3 rounded-md">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined">person</span>
+              <div className="flex-1">
+                <div className="text-sm text-gray-500">Bio</div>
+                {editing ? (
+                  <textarea value={bioEdit} onChange={e=>setBioEdit(e.target.value)} rows={3} className="w-full mt-2 p-2 border rounded text-sm" />
+                ) : (
+                  <div className="mt-2 text-sm text-gray-700">{profile?.bio || 'Aggiungi una breve presentazione.'}</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Preferred duration */}
+          <div className="bg-white p-3 rounded-md flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined">timer</span>
+              <div>
+                <div className="text-sm text-gray-500">Durata preferita</div>
+                {editing ? (
+                  <input type="number" min={5} value={prefDurationEdit} onChange={e=>setPrefDurationEdit(Number(e.target.value))} className="mt-1 font-medium w-24" />
+                ) : (
+                  <div className="font-medium">{profile?.preferred_duration ?? 30} min/die</div>
+                )}
+              </div>
+            </div>
+            <div className="text-gray-400">{editing ? '' : '>'}</div>
+          </div>
+
+          {/* Preferred categories */}
+          <div className="bg-white p-3 rounded-md">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined">category</span>
+              <div className="flex-1">
+                <div className="text-sm text-gray-500">Categorie preferite</div>
+                {editing ? (
+                  <input value={preferredCategoriesEdit} onChange={e=>setPreferredCategoriesEdit(e.target.value)} className="w-full mt-2 p-2 border rounded text-sm" placeholder="es. Cardio, Forza, Mobilità" />
+                ) : (
+                  <div className="mt-2 text-sm text-gray-700">{profile?.preferred_categories || '—'}</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Public profile */}
+          <div className="bg-white p-3 rounded-md flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined">visibility</span>
+              <div>
+                <div className="text-sm text-gray-500">Visibilità profilo</div>
+                <div className="font-medium">{(profile?.is_public ?? isPublic) ? 'Pubblico' : 'Privato'}</div>
+              </div>
+            </div>
+            {editing ? (
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={isPublic} onChange={e=>setIsPublic(Boolean(e.target.checked))} />
+                <span className="text-sm text-gray-600">Visibile agli altri</span>
+              </label>
+            ) : (
+              <div className="text-gray-400">{(profile?.is_public ?? isPublic) ? ' ' : ' '}</div>
+            )}
+          </div>
 
         <div className="bg-white p-3 rounded-md flex items-center justify-between">
           <div className="flex items-center gap-3">

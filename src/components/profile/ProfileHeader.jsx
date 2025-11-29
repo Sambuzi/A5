@@ -12,6 +12,7 @@ export default function ProfileHeader({
   onSave,
   saving,
   onCancelEdit,
+  onEdit,
 }){
   const displayName = profile?.name || 'Utente'
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=EDE9FE&color=5B21B6&size=128`
@@ -43,7 +44,7 @@ export default function ProfileHeader({
             <button onClick={onCancelEdit} className="px-3 py-2 bg-gray-100 rounded-md">Annulla</button>
           </div>
         ) : (
-          <button onClick={()=>{ /* handled by parent */ }} className="px-3 py-2 bg-gray-100 rounded-md flex items-center gap-2" disabled={false}>
+          <button onClick={onEdit} className="px-3 py-2 bg-gray-100 rounded-md flex items-center gap-2" disabled={false}>
             <span className="material-symbols-outlined">edit</span>
             <span className="text-sm">Modifica</span>
           </button>
