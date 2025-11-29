@@ -1,5 +1,6 @@
 import React, {useState} from 'react'
 import Timer from '../components/Timer'
+import AppBar from '../components/AppBar'
 import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
 
@@ -19,11 +20,9 @@ export default function Workout(){
   }
 
   return (
-    <div className="p-4 flex-1">
-      <div className="mb-4">
-        <button onClick={()=>window.history.back()} className="text-gray-600">◀ Indietro</button>
-      </div>
-
+    <div className="p-0 flex-1 min-h-0">
+      <AppBar title={exercise.title} />
+      <div className="p-4">
       <h2 className="text-xl font-semibold">{exercise.title}</h2>
       <img src={exercise.image} alt="exercise" className="w-full h-48 object-cover rounded mt-3 mb-3" />
 
@@ -50,6 +49,7 @@ export default function Workout(){
         <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={()=>saveCompleted(0)}>Segna completato</button>
       </div>
 
+      </div>
       <BottomNav />
     </div>
   )

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
+import AppBar from '../components/AppBar'
 
 export default function ProfileEdit(){
   const [loading, setLoading] = useState(true)
@@ -102,10 +103,12 @@ export default function ProfileEdit(){
     }finally{ setSaving(false) }
   }
 
-  if(loading) return <div className="p-4">Caricamento...</div>
-
   return (
-    <div className="p-4">
+    <div className="p-0 flex-1 min-h-0">
+      <AppBar title="Modifica profilo" />
+      <div className="p-4">
+      {loading ? <div className="p-2">Caricamento...</div> : (
+      <>
       <h1 className="text-xl font-semibold mb-4">Modifica profilo</h1>
       {error && <div className="text-red-600 mb-3">Errore: {error}</div>}
 
@@ -150,6 +153,9 @@ export default function ProfileEdit(){
 
       <div className="mt-6 text-xs text-gray-500">
         Nota: Per usare l'upload è necessario creare un bucket pubblico chiamato `avatars` nella sezione Storage di Supabase e abilitare URL pubblici.
+      </div>
+      </>
+      )}
       </div>
     </div>
   )

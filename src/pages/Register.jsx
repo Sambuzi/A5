@@ -1,6 +1,7 @@
 import React, {useState} from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Link, useNavigate } from 'react-router-dom'
+import AppBar from '../components/AppBar'
 
 export default function Register(){
   const [email, setEmail] = useState('')
@@ -17,7 +18,9 @@ export default function Register(){
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto w-full">
+    <div className="p-0 flex-1 min-h-0">
+      <AppBar title="Registrati" />
+      <div className="p-4 max-w-md mx-auto w-full">
       <div className="mb-4 text-center">
         <h1 className="text-2xl font-semibold">Registrati</h1>
         <p className="text-sm text-gray-500">Crea il tuo account WellGym</p>
@@ -39,6 +42,7 @@ export default function Register(){
 
       <div className="mt-4 text-center">
         <Link to="/login" className="text-primary">Hai già un account? Accedi</Link>
+      </div>
       </div>
     </div>
   )

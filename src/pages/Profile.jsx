@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
+import AppBar from '../components/AppBar'
 import { useNavigate } from 'react-router-dom'
 
 export default function Profile(){
@@ -165,7 +166,9 @@ export default function Profile(){
   const hasError = Boolean(error)
 
   return (
-    <div className="p-4 flex-1">
+    <div className="p-0 flex-1 min-h-0">
+      <AppBar title="Profilo" />
+      <div className="p-4">
       <h1 className="text-xl font-semibold mb-3">Profilo</h1>
 
       {isLoading && (
@@ -301,6 +304,7 @@ export default function Profile(){
         </button>
       </div>
 
+      </div>
       <BottomNav />
     </div>
   )

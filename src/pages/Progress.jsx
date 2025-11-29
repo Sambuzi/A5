@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Bar } from 'react-chartjs-2'
 import { Chart, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
+import AppBar from '../components/AppBar'
 import BottomNav from '../components/BottomNav'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip)
@@ -28,7 +29,9 @@ export default function Progress(){
   },[])
 
   return (
-    <div className="p-4 flex-1">
+    <div className="p-0 flex-1 min-h-0">
+      <AppBar title="Progressi" />
+      <div className="p-4">
       <h1 className="text-xl font-semibold mb-3">Progressi</h1>
       <div className="bg-white p-4 rounded shadow mb-4">
         {data ? <Bar data={data} /> : <div>Caricamento...</div>}
@@ -58,6 +61,7 @@ export default function Progress(){
         <div className="text-lg font-semibold">1200 / 2000 restanti</div>
       </div>
 
+      </div>
       <BottomNav />
     </div>
   )
