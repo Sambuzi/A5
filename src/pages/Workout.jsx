@@ -50,6 +50,7 @@ export default function Workout(){
   const [loading, setLoading] = useState(true)
   const [level, setLevel] = useState('Neofita')
   const [selected, setSelected] = useState(null) // selected exercise id
+  const [selectedCategory, setSelectedCategory] = useState(null) // selected workout type/category
   const [reps, setReps] = useState(10)
   const [message, setMessage] = useState(null)
 
@@ -75,7 +76,8 @@ export default function Workout(){
       if(mounted) setLevel(finalLevel)
 
       try{
-        const { data, error } = await supabase.from('exercises').select('id, level, title, description, demo_url').eq('level', finalLevel).order('created_at', { ascending: true })
+        // include `category` so frontend can group exercises by workout type
+        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url').eq('level', finalLevel).order('created_at', { ascending: true })
         if(error) throw error
         if(mounted) setExercises(data || [])
       }catch(e){ console.error('Error loading exercises', e); if(mounted) setExercises([]) }
@@ -94,6 +96,14 @@ export default function Workout(){
   }
 
   const current = selected ? exercises.find(e=>e.id===selected) : null
+  // group exercises by category for UI and navigation
+  const groups = exercises.reduce((acc, ex) => {
+    const cat = ex.category || 'Generale'
+    if(!acc[cat]) acc[cat] = []
+    acc[cat].push(ex)
+    return acc
+  }, {})
+  const cats = Object.keys(groups)
 
   return (
     <div className="p-0 flex-1 min-h-0">
@@ -103,19 +113,52 @@ export default function Workout(){
 
         {loading && <div className="p-3 mb-4 bg-yellow-50 text-yellow-800 rounded">Caricamento esercizi…</div>}
 
-        {!current && (
-          <div className="space-y-3 overflow-auto">
-            {exercises.map(ex => (
-              <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null) }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">{ex.title}</div>
-                  <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+          {!current && (
+            <div className="flex-1 overflow-auto">
+              {!selectedCategory && (
+                <div className="space-y-3">
+                  {/* Render categories (workout types) grouped from exercises */}
+                  {(() => {
+                    if(cats.length === 0) return <div className="p-4 bg-white rounded-md text-center text-gray-600">Nessun esercizio disponibile per questo livello.</div>
+
+                    return cats.map(cat => (
+                      <button key={cat} onClick={()=>{
+                        // open category and start first exercise immediately
+                        const first = groups[cat]?.[0]
+                        setSelectedCategory(cat)
+                        if(first){ setSelected(first.id); setReps(10); setMessage(null) }
+                      }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{cat}</div>
+                          <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi</div>
+                        </div>
+                        <div className="text-sm text-primary">Apri</div>
+                      </button>
+                    ))
+                  })()}
                 </div>
-                <div className="text-sm text-primary">Avvia</div>
-              </button>
-            ))}
-          </div>
-        )}
+              )}
+
+              {selectedCategory && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold text-lg">{selectedCategory}</div>
+                    <button className="text-sm text-primary" onClick={()=>setSelectedCategory(null)}>Indietro</button>
+                  </div>
+
+                  {exercises.filter(e => (e.category || 'Generale') === selectedCategory).map(ex => (
+                    <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null) }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold">{ex.title}</div>
+                        <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                      </div>
+                      <div className="text-sm text-primary">Avvia</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
         {current && (
           <div className="flex-1 overflow-auto">
@@ -125,7 +168,8 @@ export default function Workout(){
             </div>
 
             <div className="mb-3">
-              <Timer initialSeconds={45} onComplete={()=>saveCompleted(45, current)} />
+              {/* remount Timer when selected changes so it resets */}
+              <Timer key={selected} initialSeconds={45} onComplete={()=>saveCompleted(45, current)} />
             </div>
 
             <div className="mt-4 bg-white p-3 rounded shadow flex items-center justify-between">
@@ -143,6 +187,33 @@ export default function Workout(){
 
             <div className="mt-6 flex gap-2">
               <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={()=>saveCompleted(0, current)}>Segna completato</button>
+
+              {(() => {
+                const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
+                const idx = list.findIndex(x => x.id === current.id)
+                const isLast = !(idx >= 0 && idx < list.length - 1)
+
+                if(!isLast){
+                  return (
+                    <button className="px-4 py-2 bg-gray-100 rounded" onClick={()=>{
+                      const next = list[idx+1]
+                      setSelected(next.id)
+                      setReps(10)
+                      setMessage(null)
+                    }}>Successivo</button>
+                  )
+                }
+
+                return (
+                  <button className="px-4 py-2 bg-red-600 text-white rounded" onClick={()=>{
+                    // finish the opened category/workout
+                    setSelected(null)
+                    setSelectedCategory(null)
+                    setMessage('Allenamento completato')
+                  }}>Termina allenamento</button>
+                )
+              })()}
+
               <button className="px-4 py-2 bg-gray-100 rounded" onClick={()=>setSelected(null)}>Indietro</button>
             </div>
           </div>
