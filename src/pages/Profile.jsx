@@ -240,6 +240,9 @@ export default function Profile(){
           setPreferredCategoriesEdit={setPreferredCategoriesEdit}
           isPublic={isPublic}
           setIsPublic={setIsPublic}
+          editingField={editingField}
+          setEditingField={setEditingField}
+          updateProfileField={updateField}
         />
       </div>
 
