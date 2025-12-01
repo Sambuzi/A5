@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import AppBar from '../components/AppBar'
 import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
+import useProfile from '../hooks/useProfile'
 
 function Timer({ initialSeconds = 45, onComplete }){
   const [seconds, setSeconds] = useState(initialSeconds)
@@ -15,7 +16,7 @@ function Timer({ initialSeconds = 45, onComplete }){
           if(s <= 1){
             clearInterval(intervalRef.current)
             setRunning(false)
-            onComplete && onComplete()
+            onComplete && onComplete(initialSeconds)
             return 0
           }
           return s-1
@@ -54,6 +55,15 @@ export default function Workout(){
   const [reps, setReps] = useState(10)
   const [message, setMessage] = useState(null)
 
+  const { profile } = useProfile()
+  // read cached profile synchronously to avoid flashes
+  let cachedProfile = null
+  try{ const raw = sessionStorage.getItem('wellgym_profile_cache_v1'); if(raw) cachedProfile = JSON.parse(raw) }catch(e){ cachedProfile = null }
+
+  const preferredMinutes = (profile?.preferred_duration ?? cachedProfile?.preferred_duration) || 30
+  const preferredCategoriesRaw = (profile?.preferred_categories ?? cachedProfile?.preferred_categories) || ''
+  const preferredCategories = preferredCategoriesRaw.split(',').map(s=>s.trim()).filter(Boolean)
+
   useEffect(()=>{
     let mounted = true
     async function load(){
@@ -86,6 +96,23 @@ export default function Workout(){
     load()
     return ()=>{ mounted = false }
   }, [])
+
+  // when exercises load, if user has preferred categories, auto-open that category
+  useEffect(()=>{
+    if(exercises.length === 0) return
+    if(preferredCategories.length === 0) return
+    const groups = exercises.reduce((acc, ex) => { const cat = ex.category || 'Generale'; if(!acc[cat]) acc[cat]=[]; acc[cat].push(ex); return acc }, {})
+    for(const cat of preferredCategories){
+      if(groups[cat] && groups[cat].length>0){
+        const first = groups[cat][0]
+        setSelectedCategory(cat)
+        setSelected(first.id)
+        setReps(10)
+        setMessage(null)
+        return
+      }
+    }
+  }, [exercises])
 
   async function saveCompleted(durationSec, ex){
     try{
@@ -169,7 +196,7 @@ export default function Workout(){
 
             <div className="mb-3">
               {/* remount Timer when selected changes so it resets */}
-              <Timer key={selected} initialSeconds={45} onComplete={()=>saveCompleted(45, current)} />
+              <Timer key={selected} initialSeconds={preferredMinutes * 60} onComplete={(secs)=>saveCompleted(secs, current)} />
             </div>
 
             <div className="mt-4 bg-white p-3 rounded shadow flex items-center justify-between">
@@ -186,7 +213,7 @@ export default function Workout(){
             {message && <div className="mt-3 text-sm text-green-600">{message}</div>}
 
             <div className="mt-6 flex gap-2">
-              <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(0, current)}>Segna completato</button>
+              <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(preferredMinutes * 60, current)}>Segna completato</button>
 
               {(() => {
                 const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
