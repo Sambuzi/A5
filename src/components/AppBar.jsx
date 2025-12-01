@@ -22,32 +22,11 @@ export default function AppBar({ title, showBack = true }){
           </button>
         </div>
 
-        {/* secondary nav for larger screens */}
-        <nav className="hidden md:flex w-full justify-center gap-6 mt-2">
-          <Link to="/" className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary">
-            <span className="material-symbols-outlined">home</span>
-            <span>Home</span>
-          </Link>
-
-          <Link to="/workout" className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary">
-            <span className="material-symbols-outlined">fitness_center</span>
-            <span>Allenamento</span>
-          </Link>
-
-          <Link to="/community" className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary">
-            <span className="material-symbols-outlined">chat</span>
-            <span>Community</span>
-          </Link>
-
-          <Link to="/profile" className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary">
-            <span className="material-symbols-outlined">person</span>
-            <span>Profilo</span>
-          </Link>
-        </nav>
+        {/* secondary nav removed — keep AppBar minimal */}
       </div>
 
-      {/* spacer to reserve AppBar height for page content (bigger because of secondary nav on md+) */}
-      <div className="h-20" aria-hidden="true" />
+      {/* spacer to reserve AppBar height for page content */}
+      <div className="h-16" aria-hidden="true" />
     </>
   )
 }
