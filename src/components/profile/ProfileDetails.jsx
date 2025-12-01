@@ -55,24 +55,7 @@ export default function ProfileDetails({
         <div className="text-gray-400">{editingField === 'level' ? '' : '>'}</div>
       </div>
 
-      <div role="button" onClick={()=>{ if(!editingField) { setEditingField('goal'); setGoalEdit(profile?.goal ?? goalEdit) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined">schedule</span>
-          <div>
-            <div className="text-sm text-gray-500">Obiettivo giornaliero</div>
-            {editingField === 'goal' ? (
-              <div className="flex items-center gap-2">
-                <input value={goalEdit} onChange={e=>setGoalEdit(e.target.value)} className="font-medium" />
-                <button onClick={(ev)=>{ ev.stopPropagation(); updateProfileField('goal', goalEdit) }} className="px-2 py-1 bg-primary text-white rounded text-sm">Salva</button>
-                <button onClick={(ev)=>{ ev.stopPropagation(); setEditingField(null); setGoalEdit(profile?.goal ?? goalEdit) }} className="px-2 py-1 bg-gray-100 rounded text-sm">Annulla</button>
-              </div>
-            ) : (
-              <div className="font-medium">{profile?.goal ?? '30 min/die'}</div>
-            )}
-          </div>
-        </div>
-        <div className="text-gray-400">{editingField === 'goal' ? '' : '>'}</div>
-      </div>
+      {/* Obiettivo giornaliero rimosso su richiesta */}
 
       <div className="bg-white p-3 rounded-md flex items-center justify-between">
         <div className="flex items-center gap-3">

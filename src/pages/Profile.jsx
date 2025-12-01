@@ -5,6 +5,7 @@ import AppBar from '../components/AppBar'
 import ProfileHeader from '../components/profile/ProfileHeader'
 import ProfileDetails from '../components/profile/ProfileDetails'
 import ProfilePreferences from '../components/profile/ProfilePreferences'
+import CompletedWorkouts from '../components/profile/CompletedWorkouts'
 import useProfile from '../hooks/useProfile'
 import { useNavigate } from 'react-router-dom'
 
@@ -31,6 +32,8 @@ export default function Profile(){
   const [levelEdit, setLevelEdit] = useState('Neofita')
   const [goalEdit, setGoalEdit] = useState('30 min/die')
   const [bioEdit, setBioEdit] = useState('')
+  const [workouts, setWorkouts] = useState([])
+  const [workoutsLoading, setWorkoutsLoading] = useState(true)
   
   const fileInputRef = useRef(null)
   const levelPopRef = useRef(null)
@@ -137,6 +140,35 @@ export default function Profile(){
 
   // single-field updates are handled by the `useProfile` hook (updateField)
 
+  // load completed workouts for this user and compute totals
+  useEffect(()=>{
+    let mounted = true
+    async function loadWorkouts(){
+      setWorkoutsLoading(true)
+      try{
+        const { data: userData } = await supabase.auth.getUser()
+        const user = userData?.user
+        if(!user){ if(mounted) setWorkouts([]); return }
+
+        const { data, error } = await supabase.from('workouts')
+          .select('id, exercise, duration, reps, performed_at')
+          .eq('user_id', user.id)
+          .order('performed_at', { ascending: false })
+
+        if(error) throw error
+        if(!mounted) return
+        setWorkouts(data || [])
+      }catch(e){
+        console.error('Error loading workouts', e)
+        if(mounted) setWorkouts([])
+      }finally{
+        if(mounted) setWorkoutsLoading(false)
+      }
+    }
+    loadWorkouts()
+    return ()=>{ mounted = false }
+  }, [])
+
   async function logout(){
     await supabase.auth.signOut()
     navigate('/login')
@@ -213,6 +245,7 @@ export default function Profile(){
           setEditingField={setEditingField}
           updateProfileField={updateField}
         />
+        <CompletedWorkouts />
       </div>
 
       <div className="mt-6">
