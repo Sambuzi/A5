@@ -61,8 +61,18 @@ export default function Workout(){
   try{ const raw = sessionStorage.getItem('wellgym_profile_cache_v1'); if(raw) cachedProfile = JSON.parse(raw) }catch(e){ cachedProfile = null }
 
   const preferredMinutes = (profile?.preferred_duration ?? cachedProfile?.preferred_duration) || 30
-  const preferredCategoriesRaw = (profile?.preferred_categories ?? cachedProfile?.preferred_categories) || ''
-  const preferredCategories = preferredCategoriesRaw.split(',').map(s=>s.trim()).filter(Boolean)
+  function getPreferredCategoriesForLevel(lvl){
+    const raw = profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? ''
+    if(!raw) return []
+    try{
+      const parsed = JSON.parse(raw)
+      if(parsed && typeof parsed === 'object'){
+        const v = parsed[lvl] || ''
+        return (v || '').split(',').map(s=>s.trim()).filter(Boolean)
+      }
+    }catch(e){ /* not JSON, fall through */ }
+    return (raw || '').split(',').map(s=>s.trim()).filter(Boolean)
+  }
 
   // initial seconds for Timer; will be set to exercise/category default when available
   const [initialSeconds, setInitialSeconds] = useState(preferredMinutes * 60)
@@ -100,12 +110,13 @@ export default function Workout(){
     return ()=>{ mounted = false }
   }, [])
 
-  // when exercises load, if user has preferred categories, auto-open that category
+  // when exercises load, if user has preferred categories for this level, auto-open that category
   useEffect(()=>{
     if(exercises.length === 0) return
-    if(preferredCategories.length === 0) return
+    const prefCats = getPreferredCategoriesForLevel(level)
+    if(prefCats.length === 0) return
     const groups = exercises.reduce((acc, ex) => { const cat = ex.category || 'Generale'; if(!acc[cat]) acc[cat]=[]; acc[cat].push(ex); return acc }, {})
-    for(const cat of preferredCategories){
+    for(const cat of prefCats){
       if(groups[cat] && groups[cat].length>0){
         const first = groups[cat][0]
         setSelectedCategory(cat)
@@ -118,7 +129,7 @@ export default function Workout(){
         return
       }
     }
-  }, [exercises])
+  }, [exercises, level])
 
   async function saveCompleted(durationSec, ex){
     try{

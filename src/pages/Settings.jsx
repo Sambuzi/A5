@@ -41,6 +41,26 @@ export default function Settings(){
     if(raw) cachedProfile = JSON.parse(raw)
   }catch(e){ cachedProfile = null }
 
+  const prefsLoadedRef = useRef(false)
+
+  function getFinalLevel(){
+    try{
+      const raw = sessionStorage.getItem('wellgym_profile_cache_v1')
+      if(raw){ const c = JSON.parse(raw); if(c?.level) return c.level }
+    }catch(e){}
+    if(profile?.level) return profile.level
+    return 'Neofita'
+  }
+
+  function parsePreferredByLevel(raw){
+    if(!raw) return {}
+    try{
+      const parsed = JSON.parse(raw)
+      if(parsed && typeof parsed === 'object') return parsed
+    }catch(e){ /* not JSON */ }
+    return { [getFinalLevel()]: (raw || '') }
+  }
+
   useEffect(()=>{
     if(!profile) return
     // Initialize local state only if it's not been set yet (null).
@@ -56,20 +76,27 @@ export default function Settings(){
     if(preferredCategories === null){
       setPreferredCategories(profile.preferred_categories || '')
     }
-    // initialize selectedCategories from string value if not set
+    // initialize selectedCategories from per-level value if not set
     if(selectedCategories.length === 0){
-      const initial = (profile.preferred_categories || cachedProfile?.preferred_categories || '')
-      const parts = initial.split(',').map(s=>s.trim()).filter(Boolean)
+      const raw = profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? ''
+      const byLevel = parsePreferredByLevel(raw)
+      const lvl = getFinalLevel()
+      const initial = byLevel[lvl] || ''
+      const parts = (initial || '').split(',').map(s=>s.trim()).filter(Boolean)
       if(parts.length) setSelectedCategories(parts)
     }
+    // mark initial prefs as loaded so autosave can start
+    if(!prefsLoadedRef.current) prefsLoadedRef.current = true
   }, [profile, notifications, isPublic, preferredDuration, preferredCategories])
 
   // fetch available categories from exercises table (distinct client-side)
+  // filtered by the user's current level so Settings shows level-specific categories
   useEffect(()=>{
     let mounted = true
     async function loadCats(){
       try{
-        const { data } = await supabase.from('exercises').select('category')
+        const lvl = getFinalLevel()
+        const { data } = await supabase.from('exercises').select('category').eq('level', lvl)
         if(!mounted) return
         const cats = Array.from(new Set((data || []).map(r=>r.category).filter(Boolean)))
         setAvailableCategories(cats)
@@ -77,7 +104,7 @@ export default function Settings(){
     }
     loadCats()
     return ()=>{ mounted = false }
-  }, [])
+  }, [profile])
 
   async function onToggleNotifications(val){
     setNotifications(val)
@@ -92,6 +119,37 @@ export default function Settings(){
     try{ await updateField('is_public', val); setStatus('Salvato') }catch(e){ setStatus('Errore') }
     setTimeout(()=>setStatus(''), 1500)
   }
+
+  // Auto-save preferredDuration when user changes it (debounced)
+  useEffect(()=>{
+    if(preferredDuration === null) return
+    if(!prefsLoadedRef.current) return
+    const t = setTimeout(async ()=>{
+      setStatus('Salvando...')
+      try{ await updateField('preferred_duration', Number(preferredDuration) || 30); setStatus('Salvato') }catch(e){ setStatus('Errore') }
+      setTimeout(()=>setStatus(''), 1500)
+    }, 700)
+    return ()=> clearTimeout(t)
+  }, [preferredDuration])
+
+  // Auto-save selectedCategories when changed (debounced) and save per-level
+  useEffect(()=>{
+    if(!prefsLoadedRef.current) return
+    const t = setTimeout(async ()=>{
+      setStatus('Salvando...')
+      try{
+        const lvl = getFinalLevel()
+        const raw = profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? ''
+        const byLevel = parsePreferredByLevel(raw)
+        const cats = (selectedCategories && selectedCategories.length) ? selectedCategories.join(', ') : ''
+        byLevel[lvl] = cats
+        await updateField('preferred_categories', JSON.stringify(byLevel))
+        setStatus('Salvato')
+      }catch(e){ setStatus('Errore') }
+      setTimeout(()=>setStatus(''), 1500)
+    }, 700)
+    return ()=> clearTimeout(t)
+  }, [selectedCategories])
 
   // preferences autosave handled by effects; explicit save button removed
 
@@ -165,7 +223,18 @@ export default function Settings(){
 
             <div className="mt-3">
               <div className="text-sm text-gray-500">Categorie salvate</div>
-              <div className="mt-1 text-sm text-gray-700">{(selectedCategories && selectedCategories.length) ? selectedCategories.join(', ') : (preferredCategories ?? profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? '')}</div>
+                <div className="mt-1 text-sm text-gray-700">{(selectedCategories && selectedCategories.length) ? selectedCategories.join(', ') : (()=>{
+                  // display per-level saved categories when available
+                  try{
+                    const raw = profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? ''
+                    const parsed = JSON.parse(raw)
+                    if(parsed && typeof parsed === 'object'){
+                      const lvl = getFinalLevel()
+                      return (parsed[lvl] || '')
+                    }
+                  }catch(e){}
+                  return (preferredCategories ?? profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? '')
+                })()}</div>
             </div>
           </div>
           <div className="pt-2">
