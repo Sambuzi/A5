@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
 import AppBar from '../components/AppBar'
 import ProfileHeader from '../components/profile/ProfileHeader'
-import NotificationsSwitch from '../components/profile/NotificationsSwitch'
 import ProfileDetails from '../components/profile/ProfileDetails'
 import ProfilePreferences from '../components/profile/ProfilePreferences'
 import useProfile from '../hooks/useProfile'
@@ -25,25 +24,14 @@ export default function Profile(){
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingField, setEditingField] = useState(null)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(()=>{
-    try{
-      const raw = sessionStorage.getItem(PROFILE_CACHE_KEY)
-      if(raw){
-        const cached = JSON.parse(raw)
-        return cached.notifications ?? true
-      }
-    }catch(e){}
-    return true
-  })
+  
   const [avatarFile, setAvatarFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [nameEdit, setNameEdit] = useState('')
   const [levelEdit, setLevelEdit] = useState('Neofita')
   const [goalEdit, setGoalEdit] = useState('30 min/die')
   const [bioEdit, setBioEdit] = useState('')
-  const [prefDurationEdit, setPrefDurationEdit] = useState(30)
-  const [preferredCategoriesEdit, setPreferredCategoriesEdit] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
+  
   const fileInputRef = useRef(null)
   const levelPopRef = useRef(null)
   const navigate = useNavigate()
@@ -58,11 +46,8 @@ export default function Profile(){
       setNameEdit(loadedProfile.name)
       setLevelEdit(loadedProfile.level)
       setGoalEdit(loadedProfile.goal)
-      setNotificationsEnabled(loadedProfile.notifications ?? true)
       setBioEdit(loadedProfile.bio || '')
-      setPrefDurationEdit(loadedProfile.preferred_duration || 30)
-      setPreferredCategoriesEdit(loadedProfile.preferred_categories || '')
-      setIsPublic(Boolean(loadedProfile.is_public))
+      
     }
   }, [loadedProfile])
 
@@ -126,9 +111,7 @@ export default function Profile(){
         level: levelEdit,
         goal: goalEdit,
         bio: bioEdit,
-        preferred_duration: Number(prefDurationEdit) || 30,
-        preferred_categories: preferredCategoriesEdit || '',
-        is_public: Boolean(isPublic),
+        
       }
       if(uploadedUrl) payload.avatar_url = uploadedUrl
       // use hook to save and update cache
@@ -137,10 +120,7 @@ export default function Profile(){
         level: levelEdit,
         goal: goalEdit,
         bio: bioEdit,
-        preferred_duration: Number(prefDurationEdit) || 30,
-        preferred_categories: preferredCategoriesEdit || '',
-        is_public: Boolean(isPublic),
-        notifications: notificationsEnabled,
+        
         ...(uploadedUrl ? { avatar_url: uploadedUrl } : {})
       })
 
@@ -198,9 +178,7 @@ export default function Profile(){
           setLevelEdit(profile?.level ?? levelEdit);
           setGoalEdit(profile?.goal ?? goalEdit);
           setBioEdit(profile?.bio || '');
-          setPrefDurationEdit(profile?.preferred_duration || 30);
-          setPreferredCategoriesEdit(profile?.preferred_categories || '');
-          setIsPublic(Boolean(profile?.is_public));
+          
           setAvatarFile(null);
           if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
         }}
@@ -210,9 +188,7 @@ export default function Profile(){
           setLevelEdit(profile?.level ?? levelEdit);
           setGoalEdit(profile?.goal ?? goalEdit);
           setBioEdit(profile?.bio || '');
-          setPrefDurationEdit(profile?.preferred_duration || 30);
-          setPreferredCategoriesEdit(profile?.preferred_categories || '');
-          setIsPublic(Boolean(profile?.is_public));
+          
         }}
       />
       <div className="space-y-3">
@@ -225,8 +201,6 @@ export default function Profile(){
           goalEdit={goalEdit}
           setGoalEdit={setGoalEdit}
           updateProfileField={updateField}
-          notificationsEnabled={notificationsEnabled}
-          setNotificationsEnabled={setNotificationsEnabled}
         />
 
         <ProfilePreferences
@@ -234,12 +208,7 @@ export default function Profile(){
           editing={editing}
           bioEdit={bioEdit}
           setBioEdit={setBioEdit}
-          prefDurationEdit={prefDurationEdit}
-          setPrefDurationEdit={setPrefDurationEdit}
-          preferredCategoriesEdit={preferredCategoriesEdit}
-          setPreferredCategoriesEdit={setPreferredCategoriesEdit}
-          isPublic={isPublic}
-          setIsPublic={setIsPublic}
+          
           editingField={editingField}
           setEditingField={setEditingField}
           updateProfileField={updateField}

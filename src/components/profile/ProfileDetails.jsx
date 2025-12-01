@@ -1,5 +1,5 @@
 import React from 'react'
-import NotificationsSwitch from './NotificationsSwitch'
+import { Link } from 'react-router-dom'
 
 export default function ProfileDetails({
   profile,
@@ -10,8 +10,6 @@ export default function ProfileDetails({
   goalEdit,
   setGoalEdit,
   updateProfileField,
-  notificationsEnabled,
-  setNotificationsEnabled
 }){
   return (
     <div className="space-y-3">
@@ -76,14 +74,6 @@ export default function ProfileDetails({
         <div className="text-gray-400">{editingField === 'goal' ? '' : '>'}</div>
       </div>
 
-      <NotificationsSwitch
-        notificationsEnabled={notificationsEnabled}
-        onToggle={async (val) => {
-          setNotificationsEnabled(val)
-          try{ await updateProfileField('notifications', val) }catch(e){ /* handled by parent */ }
-        }}
-      />
-
       <div className="bg-white p-3 rounded-md flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="material-symbols-outlined">settings</span>
@@ -92,7 +82,9 @@ export default function ProfileDetails({
             <div className="font-medium">Password, privacy</div>
           </div>
         </div>
-        <div className="text-gray-400">&gt;</div>
+        <div>
+          <Link to="/settings" className="text-primary">Apri impostazioni</Link>
+        </div>
       </div>
     </div>
   )
