@@ -64,6 +64,9 @@ export default function Workout(){
   const preferredCategoriesRaw = (profile?.preferred_categories ?? cachedProfile?.preferred_categories) || ''
   const preferredCategories = preferredCategoriesRaw.split(',').map(s=>s.trim()).filter(Boolean)
 
+  // initial seconds for Timer; will be set to exercise/category default when available
+  const [initialSeconds, setInitialSeconds] = useState(preferredMinutes * 60)
+
   useEffect(()=>{
     let mounted = true
     async function load(){
@@ -86,8 +89,8 @@ export default function Workout(){
       if(mounted) setLevel(finalLevel)
 
       try{
-        // include `category` so frontend can group exercises by workout type
-        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url').eq('level', finalLevel).order('created_at', { ascending: true })
+        // include `category` and `default_duration` so frontend can group exercises and compute durations
+        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration').eq('level', finalLevel).order('created_at', { ascending: true })
         if(error) throw error
         if(mounted) setExercises(data || [])
       }catch(e){ console.error('Error loading exercises', e); if(mounted) setExercises([]) }
@@ -108,6 +111,9 @@ export default function Workout(){
         setSelectedCategory(cat)
         setSelected(first.id)
         setReps(10)
+        // set timer to category/exercise default if available
+        const durMin = (first.default_duration ?? preferredMinutes)
+        setInitialSeconds(durMin * 60)
         setMessage(null)
         return
       }
@@ -149,18 +155,34 @@ export default function Workout(){
                     if(cats.length === 0) return <div className="p-4 bg-white rounded-md text-center text-gray-600">Nessun esercizio disponibile per questo livello.</div>
 
                     return cats.map(cat => (
-                      <button key={cat} onClick={()=>{
-                        // open category and start first exercise immediately
-                        const first = groups[cat]?.[0]
-                        setSelectedCategory(cat)
-                        if(first){ setSelected(first.id); setReps(10); setMessage(null) }
-                      }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold">{cat}</div>
-                          <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi</div>
-                        </div>
-                        <div className="text-sm text-primary">Apri</div>
-                      </button>
+                      (() => {
+                        // compute total duration for this category (minutes)
+                        const totalMinutes = groups[cat].reduce((sum, ex) => {
+                          return sum + (ex.default_duration != null ? Number(ex.default_duration) : preferredMinutes)
+                        }, 0)
+
+                        return (
+                          <button key={cat} onClick={()=>{
+                            // open category and start first exercise immediately
+                            const first = groups[cat]?.[0]
+                            setSelectedCategory(cat)
+                            if(first){
+                              setSelected(first.id)
+                              setReps(10)
+                              // set timer to category/exercise default when opening
+                              const durMin = (first.default_duration ?? preferredMinutes)
+                              setInitialSeconds(durMin * 60)
+                              setMessage(null)
+                            }
+                          }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold">{cat}</div>
+                              <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi · {Math.round(totalMinutes)} min</div>
+                            </div>
+                            <div className="text-sm text-primary">Apri</div>
+                          </button>
+                        )
+                      })()
                     ))
                   })()}
                 </div>
@@ -174,7 +196,7 @@ export default function Workout(){
                   </div>
 
                   {exercises.filter(e => (e.category || 'Generale') === selectedCategory).map(ex => (
-                    <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null) }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                    <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
                       <div>
                         <div className="font-semibold">{ex.title}</div>
                         <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
@@ -196,7 +218,7 @@ export default function Workout(){
 
             <div className="mb-3">
               {/* remount Timer when selected changes so it resets */}
-              <Timer key={selected} initialSeconds={preferredMinutes * 60} onComplete={(secs)=>saveCompleted(secs, current)} />
+              <Timer key={selected} initialSeconds={initialSeconds} onComplete={(secs)=>saveCompleted(secs, current)} />
             </div>
 
             <div className="mt-4 bg-white p-3 rounded shadow flex items-center justify-between">
@@ -213,7 +235,7 @@ export default function Workout(){
             {message && <div className="mt-3 text-sm text-green-600">{message}</div>}
 
             <div className="mt-6 flex gap-2">
-              <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(preferredMinutes * 60, current)}>Segna completato</button>
+              <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(initialSeconds, current)}>Segna completato</button>
 
               {(() => {
                 const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
