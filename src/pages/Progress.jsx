@@ -4,6 +4,7 @@ import { Bar } from 'react-chartjs-2'
 import { Chart, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
 import AppBar from '../components/AppBar'
 import BottomNav from '../components/BottomNav'
+import ProgressTrend from '../components/ProgressTrend'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip)
 
@@ -37,29 +38,7 @@ export default function Progress(){
         {data ? <Bar data={data} /> : <div>Caricamento...</div>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Proteine</div>
-          <div className="font-semibold">120 g</div>
-        </div>
-        <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Carboidrati</div>
-          <div className="font-semibold">240 g</div>
-        </div>
-        <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Grassi</div>
-          <div className="font-semibold">60 g</div>
-        </div>
-        <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Acqua</div>
-          <div className="font-semibold">2.5 L</div>
-        </div>
-      </div>
-
-      <div className="mt-4 bg-white p-4 rounded shadow">
-        <div className="text-sm text-gray-500">Calorie</div>
-        <div className="text-lg font-semibold">1200 / 2000 restanti</div>
-      </div>
+      <ProgressTrend />
 
       </div>
       <BottomNav />

@@ -20,7 +20,7 @@ export default function CompletedWorkouts(){
         if(!user){ if(mounted) setWorkouts([]); return }
 
         const { data, error } = await supabase.from('workouts')
-          .select('id, exercise, duration, reps, performed_at')
+          .select('id, exercise, duration, reps, performed_at, calories, weight_used')
           .eq('user_id', user.id)
           .order('performed_at', { ascending: false })
 
@@ -39,6 +39,7 @@ export default function CompletedWorkouts(){
   }, [])
 
   const totalMinutes = Math.round((workouts.reduce((s,w)=>s+(w.duration||0),0))/60)
+  const totalCalories = Math.round(workouts.reduce((s,w)=>s+(w.calories||0),0))
 
   function changeSort(field){
     setSort(s => {
@@ -63,7 +64,7 @@ export default function CompletedWorkouts(){
           <div className="text-sm text-gray-500">Allenamenti completati</div>
           <div className="font-medium text-lg">Storico allenamenti</div>
         </div>
-        <div className="text-sm text-gray-600">{workouts.length} allenamenti • {totalMinutes} min</div>
+        <div className="text-sm text-gray-600">{workouts.length} allenamenti • {totalMinutes} min • {totalCalories} kcal</div>
       </div>
 
       {loading ? (
@@ -78,11 +79,12 @@ export default function CompletedWorkouts(){
                 <th className="pb-2 cursor-pointer" onClick={()=>changeSort('exercise')}>Esercizio {sort.field==='exercise' ? (sort.dir==='asc' ? '↑' : '↓') : ''}</th>
                 <th className="pb-2 cursor-pointer" onClick={()=>changeSort('duration')}>Minuti {sort.field==='duration' ? (sort.dir==='asc' ? '↑' : '↓') : ''}</th>
                 <th className="pb-2">Rip.</th>
+                <th className="pb-2">kcal</th>
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 && (
-                <tr><td colSpan={4} className="py-3 text-gray-600">Non hai ancora allenamenti registrati.</td></tr>
+                <tr><td colSpan={5} className="py-3 text-gray-600">Non hai ancora allenamenti registrati.</td></tr>
               )}
               {sorted.map(w => (
                 <tr key={w.id} className="border-t border-gray-100 hover:bg-gray-50">
@@ -90,6 +92,7 @@ export default function CompletedWorkouts(){
                   <td className="py-3">{w.exercise}</td>
                   <td className="py-3">{Math.round((w.duration || 0) / 60)}</td>
                   <td className="py-3">{w.reps ?? '-'}</td>
+                  <td className="py-3">{w.calories ?? '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -110,9 +113,10 @@ export default function CompletedWorkouts(){
                   <div className="text-right">
                     <div className="text-sm text-gray-500">Min</div>
                     <div className="font-semibold">{Math.round((w.duration || 0) / 60)}</div>
+                    <div className="text-xs text-gray-500">{w.calories ? `${w.calories} kcal` : ''}</div>
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">Rip.: {w.reps ?? '-'}</div>
+                <div className="mt-2 text-xs text-gray-500">Rip.: {w.reps ?? '-'} {w.weight_used ? ` • ${w.weight_used}${w.weight_used ? ' kg' : ''}` : ''}</div>
               </div>
             ))}
           </div>

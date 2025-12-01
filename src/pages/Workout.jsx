@@ -4,6 +4,29 @@ import { supabase } from '../lib/supabaseClient'
 import BottomNav from '../components/BottomNav'
 import useProfile from '../hooks/useProfile'
 
+// Utilities for calorie estimation
+function kgFrom(weight, units){
+  const w = Number(weight) || 0
+  return (units === 'lb') ? w * 0.45359237 : w
+}
+
+function caloriesFromMET(met, weightKg, durationMin){
+  return ((met * weightKg * 3.5) / 200) * durationMin
+}
+
+function caloriesFromPerMin(calPerMin, durationMin){
+  return (Number(calPerMin) || 0) * durationMin
+}
+
+// Lightweight fallback MET map for common exercises (estimates)
+const FALLBACK_MET = {
+  'Corsa': 9.8,
+  'Camminata veloce': 4.5,
+  'Squat': 5.0,
+  'Push-up': 8.0,
+  'Plank': 3.0,
+  'Jumping jacks': 8.0,
+}
 function Timer({ initialSeconds = 45, onComplete }){
   const [seconds, setSeconds] = useState(initialSeconds)
   const [running, setRunning] = useState(false)
@@ -134,9 +157,36 @@ export default function Workout(){
   async function saveCompleted(durationSec, ex){
     try{
       const user = (await supabase.auth.getUser()).data?.user
-      await supabase.from('workouts').insert([{ user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date() }])
-      setMessage('Esercizio salvato')
-    }catch(e){ setMessage('Errore salvataggio') }
+
+      const minutes = (Number(durationSec) || 0) / 60
+      // user weight from profile or cached profile
+      const raw = sessionStorage.getItem('wellgym_profile_cache_v1')
+      let cached = null
+      try{ if(raw) cached = JSON.parse(raw) }catch(e){ cached = null }
+      const weightVal = profile?.weight ?? cached?.weight ?? 70
+      const weightUnits = profile?.weight_units ?? cached?.weight_units ?? 'kg'
+      const weightKg = kgFrom(weightVal, weightUnits)
+
+      // pick calorie source: exercise.calories_per_min, exercise.met, fallback map
+      let kcal = 0
+      if(ex.calories_per_min) kcal = caloriesFromPerMin(ex.calories_per_min, minutes)
+      else if(ex.met) kcal = caloriesFromMET(ex.met, weightKg, minutes)
+      else if(FALLBACK_MET[ex.title]) kcal = caloriesFromMET(FALLBACK_MET[ex.title], weightKg, minutes)
+      else kcal = caloriesFromMET(6, weightKg, minutes) // generic fallback MET
+
+      // try to save calories and weight_used; if DB schema missing, retry without those fields
+      const payload = { user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date(), calories: Math.round(kcal), weight_used: Number(weightVal) }
+      let res = await supabase.from('workouts').insert([payload])
+      if(res.error){
+        // try again without calories/weight_used
+        console.warn('Saving with calories failed, retrying without extra fields', res.error)
+        const { error } = await supabase.from('workouts').insert([{ user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date() }])
+        if(error) throw error
+        setMessage('Esercizio salvato (locale)')
+      }else{
+        setMessage(`Esercizio salvato — ${Math.round(kcal)} kcal`)
+      }
+    }catch(e){ console.error('saveCompleted error', e); setMessage('Errore salvataggio') }
   }
 
   const current = selected ? exercises.find(e=>e.id===selected) : null

@@ -14,6 +14,12 @@ export default function Settings(){
   const [isPublic, setIsPublic] = useState(() => (null))
   const [preferredDuration, setPreferredDuration] = useState(() => null)
   const [preferredCategories, setPreferredCategories] = useState(() => null)
+  const [weight, setWeight] = useState(() => null)
+  const [weightUnits, setWeightUnits] = useState(() => null)
+  const [proteinGoal, setProteinGoal] = useState(() => null)
+  const [carbsGoal, setCarbsGoal] = useState(() => null)
+  const [fatsGoal, setFatsGoal] = useState(() => null)
+  const [waterGoal, setWaterGoal] = useState(() => null)
   const [availableCategories, setAvailableCategories] = useState([])
   const [selectedCategories, setSelectedCategories] = useState([])
   const [status, setStatus] = useState('')
@@ -76,6 +82,16 @@ export default function Settings(){
     if(preferredCategories === null){
       setPreferredCategories(profile.preferred_categories || '')
     }
+    if(weight === null){
+      setWeight(profile.weight ?? cachedProfile?.weight ?? 70)
+    }
+    if(weightUnits === null){
+      setWeightUnits(profile.weight_units ?? cachedProfile?.weight_units ?? 'kg')
+    }
+    if(proteinGoal === null) setProteinGoal(profile.protein_goal ?? cachedProfile?.protein_goal ?? 100)
+    if(carbsGoal === null) setCarbsGoal(profile.carbs_goal ?? cachedProfile?.carbs_goal ?? 250)
+    if(fatsGoal === null) setFatsGoal(profile.fats_goal ?? cachedProfile?.fats_goal ?? 70)
+    if(waterGoal === null) setWaterGoal(profile.water_goal ?? cachedProfile?.water_goal ?? 2)
     // initialize selectedCategories from per-level value if not set
     if(selectedCategories.length === 0){
       const raw = profile?.preferred_categories ?? cachedProfile?.preferred_categories ?? ''
@@ -132,6 +148,40 @@ export default function Settings(){
     return ()=> clearTimeout(t)
   }, [preferredDuration])
 
+  // Auto-save weight and units (debounced)
+  useEffect(()=>{
+    if(weight === null || weightUnits === null) return
+    if(!prefsLoadedRef.current) return
+    const t = setTimeout(async ()=>{
+      setStatus('Salvando...')
+      try{
+        await updateField('weight', Number(weight))
+        await updateField('weight_units', weightUnits)
+        setStatus('Salvato')
+      }catch(e){ setStatus('Errore') }
+      setTimeout(()=>setStatus(''), 1500)
+    }, 700)
+    return ()=> clearTimeout(t)
+  }, [weight, weightUnits])
+
+  // Auto-save macro & water goals (debounced)
+  useEffect(()=>{
+    if(proteinGoal === null || carbsGoal === null || fatsGoal === null || waterGoal === null) return
+    if(!prefsLoadedRef.current) return
+    const t = setTimeout(async ()=>{
+      setStatus('Salvando...')
+      try{
+        await updateField('protein_goal', Number(proteinGoal) || 0)
+        await updateField('carbs_goal', Number(carbsGoal) || 0)
+        await updateField('fats_goal', Number(fatsGoal) || 0)
+        await updateField('water_goal', Number(waterGoal) || 0)
+        setStatus('Salvato')
+      }catch(e){ setStatus('Errore') }
+      setTimeout(()=>setStatus(''), 1500)
+    }, 700)
+    return ()=> clearTimeout(t)
+  }, [proteinGoal, carbsGoal, fatsGoal, waterGoal])
+
   // Auto-save selectedCategories when changed (debounced) and save per-level
   useEffect(()=>{
     if(!prefsLoadedRef.current) return
@@ -177,6 +227,38 @@ export default function Settings(){
 
         <div className="bg-white p-4 rounded shadow space-y-2">
           <div className="text-sm text-gray-500">Preferenze allenamento</div>
+          <div className="flex items-center gap-3">
+            <div>
+              <label className="text-sm">Peso</label>
+              <div className="mt-2 flex items-center gap-2">
+                <input type="number" step="0.1" className="w-28 p-2 border rounded" value={weight ?? ''} onChange={e=>setWeight(e.target.value)} />
+                <select className="p-2 border rounded" value={weightUnits ?? 'kg'} onChange={e=>setWeightUnits(e.target.value)}>
+                  <option value="kg">kg</option>
+                  <option value="lb">lb</option>
+                </select>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Il peso viene usato per stimare le calorie.</div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="p-3 bg-white rounded">
+              <div className="text-sm text-gray-500">Proteine (g)</div>
+              <input type="number" step="1" className="mt-2 w-32 p-2 border rounded" value={proteinGoal ?? ''} onChange={e=>setProteinGoal(e.target.value)} />
+            </div>
+            <div className="p-3 bg-white rounded">
+              <div className="text-sm text-gray-500">Carboidrati (g)</div>
+              <input type="number" step="1" className="mt-2 w-32 p-2 border rounded" value={carbsGoal ?? ''} onChange={e=>setCarbsGoal(e.target.value)} />
+            </div>
+            <div className="p-3 bg-white rounded">
+              <div className="text-sm text-gray-500">Grassi (g)</div>
+              <input type="number" step="1" className="mt-2 w-32 p-2 border rounded" value={fatsGoal ?? ''} onChange={e=>setFatsGoal(e.target.value)} />
+            </div>
+            <div className="p-3 bg-white rounded">
+              <div className="text-sm text-gray-500">Acqua (L)</div>
+              <input type="number" step="0.1" className="mt-2 w-32 p-2 border rounded" value={waterGoal ?? ''} onChange={e=>setWaterGoal(e.target.value)} />
+            </div>
+          </div>
           <div className="flex items-center gap-3 relative" ref={durationRef}>
             <label className="text-sm">Durata preferita (min)</label>
             <div>

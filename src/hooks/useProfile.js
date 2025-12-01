@@ -33,7 +33,7 @@ export default function useProfile(){
 
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, level, goal, notifications, bio, preferred_duration, preferred_categories, is_public')
+          .select('full_name, avatar_url, level, goal, notifications, bio, preferred_duration, preferred_categories, is_public, weight, weight_units, protein_goal, carbs_goal, fats_goal, water_goal')
           .eq('id', user.id)
           .single()
 
@@ -49,6 +49,12 @@ export default function useProfile(){
           preferred_duration: profileRow?.preferred_duration ?? 30,
           preferred_categories: profileRow?.preferred_categories || '',
           is_public: profileRow?.is_public ?? true,
+          weight: profileRow?.weight ?? 70,
+          weight_units: profileRow?.weight_units ?? 'kg',
+          protein_goal: profileRow?.protein_goal ?? null,
+          carbs_goal: profileRow?.carbs_goal ?? null,
+          fats_goal: profileRow?.fats_goal ?? null,
+          water_goal: profileRow?.water_goal ?? null,
           joined: user.created_at
         }
 
