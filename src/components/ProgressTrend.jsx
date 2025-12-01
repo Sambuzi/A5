@@ -115,30 +115,77 @@ export default function ProgressTrend(){
 
   return (
     <div className="mt-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {/** Proteine */}
         <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Proteine</div>
-          <div className="font-semibold">{macroSimulation.burnedProteinG} g</div>
-          <div className="text-xs text-gray-500">Goal: {macroSimulation.pGoal} g • {macroSimulation.pctDoneProtein}%</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Proteine</div>
+              <div className="font-semibold text-lg">{macroSimulation.burnedProteinG} g</div>
+            </div>
+            <div className="text-right text-xs text-gray-500">Goal<br />{macroSimulation.pGoal} g</div>
+          </div>
+          <div className="mt-3">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div aria-hidden className={`h-2 ${macroSimulation.pctDoneProtein >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${Math.min(macroSimulation.pctDoneProtein, 200)}%` }} />
+            </div>
+            <div className="mt-2 text-xs text-gray-600">{macroSimulation.pctDoneProtein}% of goal</div>
+          </div>
         </div>
+
+        {/** Carboidrati */}
         <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Carboidrati</div>
-          <div className="font-semibold">{macroSimulation.burnedCarbsG} g</div>
-          <div className="text-xs text-gray-500">Goal: {macroSimulation.cGoal} g • {macroSimulation.pctDoneCarbs}%</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Carboidrati</div>
+              <div className="font-semibold text-lg">{macroSimulation.burnedCarbsG} g</div>
+            </div>
+            <div className="text-right text-xs text-gray-500">Goal<br />{macroSimulation.cGoal} g</div>
+          </div>
+          <div className="mt-3">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div aria-hidden className={`h-2 ${macroSimulation.pctDoneCarbs >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${Math.min(macroSimulation.pctDoneCarbs, 200)}%` }} />
+            </div>
+            <div className="mt-2 text-xs text-gray-600">{macroSimulation.pctDoneCarbs}% of goal</div>
+          </div>
         </div>
+
+        {/** Grassi */}
         <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Grassi</div>
-          <div className="font-semibold">{macroSimulation.burnedFatsG} g</div>
-          <div className="text-xs text-gray-500">Goal: {macroSimulation.fGoal} g • {macroSimulation.pctDoneFats}%</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Grassi</div>
+              <div className="font-semibold text-lg">{macroSimulation.burnedFatsG} g</div>
+            </div>
+            <div className="text-right text-xs text-gray-500">Goal<br />{macroSimulation.fGoal} g</div>
+          </div>
+          <div className="mt-3">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div aria-hidden className={`h-2 ${macroSimulation.pctDoneFats >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${Math.min(macroSimulation.pctDoneFats, 200)}%` }} />
+            </div>
+            <div className="mt-2 text-xs text-gray-600">{macroSimulation.pctDoneFats}% of goal</div>
+          </div>
         </div>
+
+        {/** Acqua */}
         <div className="bg-white p-3 rounded shadow">
-          <div className="text-sm text-gray-500">Acqua</div>
-          <div className="font-semibold">{macroSimulation.burnedWaterL} L</div>
-          <div className="text-xs text-gray-500">Goal: {macroSimulation.wGoal} L • {macroSimulation.pctDoneWater}%</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Acqua</div>
+              <div className="font-semibold text-lg">{macroSimulation.burnedWaterL} L</div>
+            </div>
+            <div className="text-right text-xs text-gray-500">Goal<br />{macroSimulation.wGoal} L</div>
+          </div>
+          <div className="mt-3">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div aria-hidden className={`h-2 ${macroSimulation.pctDoneWater >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${Math.min(macroSimulation.pctDoneWater, 200)}%` }} />
+            </div>
+            <div className="mt-2 text-xs text-gray-600">{macroSimulation.pctDoneWater}% of goal</div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow">
+      <div className="bg-white p-4 rounded shadow max-h-[60vh] overflow-auto">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm text-gray-500">Trend allenamenti</div>
@@ -161,8 +208,8 @@ export default function ProgressTrend(){
           <div>
             <div className="mb-3 text-sm text-gray-600">{totals.totalSessions} sessioni • {totals.totalMinutes} min • {totals.totalCalories} kcal • avg {totals.avgCalories} kcal/sessione</div>
 
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-auto max-w-full">
+              <table className="min-w-[720px] w-full text-sm whitespace-nowrap">
                 <thead>
                   <tr className="text-left text-xs text-gray-500">
                     <th className="pb-2 cursor-pointer" onClick={()=>changeSort('performed_at')}>Data {sort.field==='performed_at' ? (sort.dir==='asc' ? '↑' : '↓') : ''}</th>

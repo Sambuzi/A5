@@ -30,9 +30,9 @@ export default function Progress(){
   },[])
 
   return (
-    <div className="p-0 flex-1 min-h-0">
+    <div className="p-0 flex-1 min-h-0 flex flex-col">
       <AppBar title="Progressi" />
-      <div className="p-4">
+      <div className="p-4 flex-1 overflow-auto min-h-0 pb-24">
       <h1 className="text-xl font-semibold mb-3">Progressi</h1>
       <div className="bg-white p-4 rounded shadow mb-4">
         {data ? <Bar data={data} /> : <div>Caricamento...</div>}
