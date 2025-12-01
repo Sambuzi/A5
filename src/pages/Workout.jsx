@@ -137,6 +137,13 @@ export default function Workout(){
     return acc
   }, {})
   const cats = Object.keys(groups)
+  // compute total minutes per category (using default_duration per exercise or preferredMinutes as fallback)
+  const totalsByCat = {}
+  for(const cat of cats){
+    totalsByCat[cat] = groups[cat].reduce((sum, ex) => sum + (ex.default_duration != null ? Number(ex.default_duration) : preferredMinutes), 0)
+  }
+  const filteredCats = cats.filter(cat => totalsByCat[cat] >= (preferredMinutes || 0))
+  const anyMatch = filteredCats.length > 0
 
   return (
     <div className="p-0 flex-1 min-h-0">
@@ -154,36 +161,39 @@ export default function Workout(){
                   {(() => {
                     if(cats.length === 0) return <div className="p-4 bg-white rounded-md text-center text-gray-600">Nessun esercizio disponibile per questo livello.</div>
 
-                    return cats.map(cat => (
-                      (() => {
-                        // compute total duration for this category (minutes)
-                        const totalMinutes = groups[cat].reduce((sum, ex) => {
-                          return sum + (ex.default_duration != null ? Number(ex.default_duration) : preferredMinutes)
-                        }, 0)
-
-                        return (
-                          <button key={cat} onClick={()=>{
-                            // open category and start first exercise immediately
-                            const first = groups[cat]?.[0]
-                            setSelectedCategory(cat)
-                            if(first){
-                              setSelected(first.id)
-                              setReps(10)
-                              // set timer to category/exercise default when opening
-                              const durMin = (first.default_duration ?? preferredMinutes)
-                              setInitialSeconds(durMin * 60)
-                              setMessage(null)
-                            }
-                          }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                            <div>
-                              <div className="font-semibold">{cat}</div>
-                              <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi · {Math.round(totalMinutes)} min</div>
-                            </div>
-                            <div className="text-sm text-primary">Apri</div>
-                          </button>
-                        )
-                      })()
-                    ))
+                    {
+                      // decide which categories to display based on preferredMinutes
+                      const displayCats = anyMatch ? filteredCats : cats
+                      return (
+                        <>
+                          {!anyMatch && (
+                            <div className="text-xs text-gray-400">(Nessuna tipologia raggiunge i {preferredMinutes} min, vengono mostrati tutti i risultati)</div>
+                          )}
+                          {displayCats.map(cat => {
+                            const totalMinutes = totalsByCat[cat] || groups[cat].reduce((sum, ex) => sum + (ex.default_duration != null ? Number(ex.default_duration) : preferredMinutes), 0)
+                            return (
+                              <button key={cat} onClick={()=>{
+                                const first = groups[cat]?.[0]
+                                setSelectedCategory(cat)
+                                if(first){
+                                  setSelected(first.id)
+                                  setReps(10)
+                                  const durMin = (first.default_duration ?? preferredMinutes)
+                                  setInitialSeconds(durMin * 60)
+                                  setMessage(null)
+                                }
+                              }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                                <div>
+                                  <div className="font-semibold">{cat}</div>
+                                  <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi · {Math.round(totalMinutes)} min</div>
+                                </div>
+                                <div className="text-sm text-primary">Apri</div>
+                              </button>
+                            )
+                          })}
+                        </>
+                      )
+                    }
                   })()}
                 </div>
               )}

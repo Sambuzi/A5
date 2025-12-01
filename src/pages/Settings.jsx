@@ -16,7 +16,6 @@ export default function Settings(){
   const [preferredCategories, setPreferredCategories] = useState(() => null)
   const [availableCategories, setAvailableCategories] = useState([])
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [customCategory, setCustomCategory] = useState('')
   const [status, setStatus] = useState('')
   const [durationOpen, setDurationOpen] = useState(false)
   const durationRef = useRef(null)
@@ -94,17 +93,7 @@ export default function Settings(){
     setTimeout(()=>setStatus(''), 1500)
   }
 
-  async function savePreferences(){
-    setStatus('Salvando...')
-    try{
-      await updateField('preferred_duration', Number(preferredDuration) || 30)
-      // prefer selectedCategories if provided, otherwise fall back to text input
-      const cats = (selectedCategories && selectedCategories.length) ? selectedCategories.join(', ') : (preferredCategories || '')
-      await updateField('preferred_categories', cats)
-      setStatus('Salvato')
-    }catch(e){ setStatus('Errore') }
-    setTimeout(()=>setStatus(''), 1500)
-  }
+  // preferences autosave handled by effects; explicit save button removed
 
   return (
     <div className="p-0 flex-1 min-h-0">
@@ -172,17 +161,7 @@ export default function Settings(){
               })}
             </div>
 
-            <div className="mt-3 flex gap-2 items-center">
-              <input value={customCategory} onChange={e=>setCustomCategory(e.target.value)} className="flex-1 p-2 border rounded" placeholder="Aggiungi categoria personalizzata" />
-              <button className="px-3 py-2 bg-primary text-white rounded" onClick={()=>{
-                const v = (customCategory || '').trim()
-                if(!v) return
-                setSelectedCategories(prev => prev.includes(v) ? prev : [...prev, v])
-                setCustomCategory('')
-              }}>Aggiungi</button>
-            </div>
-
-            <div className="text-sm mt-2 text-gray-600">Seleziona le categorie che preferisci; salva per applicarle al workout.</div>
+            <div className="text-sm mt-2 text-gray-600">Seleziona le categorie che preferisci; verranno salvate automaticamente e applicate al workout.</div>
 
             <div className="mt-3">
               <div className="text-sm text-gray-500">Categorie salvate</div>
@@ -190,7 +169,6 @@ export default function Settings(){
             </div>
           </div>
           <div className="pt-2">
-            <button className="px-4 py-2 bg-primary text-white rounded" onClick={savePreferences}>Salva preferenze</button>
             {status && <span className="ml-3 text-sm text-gray-600">{status}</span>}
           </div>
         </div>
