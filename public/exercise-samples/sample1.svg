@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)" />
+  <g fill="#fff" font-family="Inter, Helvetica, Arial" font-weight="700">
+    <text x="50%" y="40%" text-anchor="middle" font-size="36">Esercizio di prova</text>
+    <text x="50%" y="56%" text-anchor="middle" font-size="18" opacity="0.9">Sample image for exercise</text>
+  </g>
+</svg>

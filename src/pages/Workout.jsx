@@ -29,8 +29,22 @@ const FALLBACK_MET = {
   'Jumping jacks': 8.0,
 }
 
-// Sample image used for quick local testing when exercises have no image_url
-const SAMPLE_IMAGE_URL = 'https://images.unsplash.com/photo-1599058917218-1d2f5d8e9f6b?auto=format&fit=crop&w=800&q=60'
+// Sample images used for quick local testing when exercises have no image_url
+const SAMPLE_IMAGES = [
+  '/exercise-samples/sample1.svg',
+  '/exercise-samples/sample2.svg',
+  '/exercise-samples/sample3.svg',
+  '/exercise-samples/sample4.svg',
+  '/exercise-samples/sample5.svg',
+  '/exercise-samples/sample6.svg',
+]
+
+function sampleForTitle(title){
+  if(!title) return SAMPLE_IMAGES[0]
+  let sum = 0
+  for(let i=0;i<title.length;i++) sum += title.charCodeAt(i)
+  return SAMPLE_IMAGES[sum % SAMPLE_IMAGES.length]
+}
 
 // Show a browser notification (if permitted) as well as keep in-app messages
 function showNotification(title, body){
@@ -144,8 +158,8 @@ export default function Workout(){
         // include `category` and `default_duration` so frontend can group exercises and compute durations
         const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration, image_url').eq('level', finalLevel).order('created_at', { ascending: true })
         if(error) throw error
-        // for quick local demo: ensure at least a few exercises show an image (non-persistent)
-        const withSamples = (data || []).map((ex, idx) => ({ ...ex, image_url: ex.image_url || (idx < 3 ? SAMPLE_IMAGE_URL : null) }))
+        // for quick local demo: ensure every exercise without an image shows a deterministic sample (non-persistent)
+        const withSamples = (data || []).map((ex) => ({ ...ex, image_url: ex.image_url || sampleForTitle(ex.title) }))
         if(mounted) setExercises(withSamples)
       }catch(e){ console.error('Error loading exercises', e); if(mounted) setExercises([]) }
       finally{ if(mounted) setLoading(false) }
