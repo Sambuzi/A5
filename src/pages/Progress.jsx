@@ -17,13 +17,21 @@ export default function Progress(){
       // sample fetch: aggregated by day (user should create proper view/table)
       const { data: rows } = await supabase.from('workouts').select('performed_at,duration')
       const week = Array.from({length:7}, ()=>0)
-      const labels = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']
       const now = new Date()
+
+      // build labels for the last 7 days (6 days ago ... today)
+      const labels = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(now)
+        d.setDate(now.getDate() - (6 - i))
+        return d.toLocaleDateString(undefined, { weekday: 'short' })
+      })
+
       rows?.forEach(r=>{
         const d = new Date(r.performed_at)
         const diff = Math.floor((now - d) / (1000*60*60*24))
         if(diff < 7) week[6-diff] += (r.duration || 0)/60
       })
+
       setData({ labels, datasets:[{ label:'Ore allenamento (ultimi 7 giorni)', data: week, backgroundColor:'#4f46e5' }] })
     }
     load()

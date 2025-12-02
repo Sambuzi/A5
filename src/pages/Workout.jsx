@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import AppBar from '../components/AppBar'
 import { supabase } from '../lib/supabaseClient'
+import { useToasts } from '../components/ToastProvider'
 import BottomNav from '../components/BottomNav'
 import useProfile from '../hooks/useProfile'
 
@@ -26,6 +27,20 @@ const FALLBACK_MET = {
   'Push-up': 8.0,
   'Plank': 3.0,
   'Jumping jacks': 8.0,
+}
+
+// Show a browser notification (if permitted) as well as keep in-app messages
+function showNotification(title, body){
+  try{
+    if(typeof window === 'undefined') return
+    if('Notification' in window){
+      if(Notification.permission === 'granted'){
+        new Notification(title, { body })
+      }else if(Notification.permission !== 'denied'){
+        Notification.requestPermission().then(p => { if(p === 'granted') new Notification(title, { body }) })
+      }
+    }
+  }catch(e){ console.warn('Notification failed', e) }
 }
 function Timer({ initialSeconds = 45, onComplete }){
   const [seconds, setSeconds] = useState(initialSeconds)
@@ -79,6 +94,7 @@ export default function Workout(){
   const [message, setMessage] = useState(null)
 
   const { profile } = useProfile()
+  const toasts = useToasts()
   // read cached profile synchronously to avoid flashes
   let cachedProfile = null
   try{ const raw = sessionStorage.getItem('wellgym_profile_cache_v1'); if(raw) cachedProfile = JSON.parse(raw) }catch(e){ cachedProfile = null }
@@ -177,14 +193,23 @@ export default function Workout(){
       // try to save calories and weight_used; if DB schema missing, retry without those fields
       const payload = { user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date(), calories: Math.round(kcal), weight_used: Number(weightVal) }
       let res = await supabase.from('workouts').insert([payload])
+      const addToast = toasts?.addToast
+
       if(res.error){
         // try again without calories/weight_used
         console.warn('Saving with calories failed, retrying without extra fields', res.error)
         const { error } = await supabase.from('workouts').insert([{ user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date() }])
         if(error) throw error
-        setMessage('Esercizio salvato (locale)')
+        const msg = 'Esercizio salvato (locale)'
+        setMessage(msg)
+        showNotification('Allenamento salvato', `${ex.title} — salvato localmente`)
+        if(addToast) addToast({ title: 'Allenamento salvato', message: `${ex.title} — salvato localmente` })
       }else{
-        setMessage(`Esercizio salvato — ${Math.round(kcal)} kcal`)
+        const kcalRound = Math.round(kcal)
+        const msg = `Esercizio salvato — ${kcalRound} kcal`
+        setMessage(msg)
+        showNotification('Allenamento salvato', `${ex.title} • ${kcalRound} kcal`)
+        if(addToast) addToast({ title: 'Allenamento salvato', message: `${ex.title} • ${kcalRound} kcal` })
       }
     }catch(e){ console.error('saveCompleted error', e); setMessage('Errore salvataggio') }
   }
