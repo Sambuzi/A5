@@ -29,6 +29,9 @@ const FALLBACK_MET = {
   'Jumping jacks': 8.0,
 }
 
+// Sample image used for quick local testing when exercises have no image_url
+const SAMPLE_IMAGE_URL = 'https://images.unsplash.com/photo-1599058917218-1d2f5d8e9f6b?auto=format&fit=crop&w=800&q=60'
+
 // Show a browser notification (if permitted) as well as keep in-app messages
 function showNotification(title, body){
   try{
@@ -139,9 +142,11 @@ export default function Workout(){
 
       try{
         // include `category` and `default_duration` so frontend can group exercises and compute durations
-        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration').eq('level', finalLevel).order('created_at', { ascending: true })
+        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration, image_url').eq('level', finalLevel).order('created_at', { ascending: true })
         if(error) throw error
-        if(mounted) setExercises(data || [])
+        // for quick local demo: ensure at least a few exercises show an image (non-persistent)
+        const withSamples = (data || []).map((ex, idx) => ({ ...ex, image_url: ex.image_url || (idx < 3 ? SAMPLE_IMAGE_URL : null) }))
+        if(mounted) setExercises(withSamples)
       }catch(e){ console.error('Error loading exercises', e); if(mounted) setExercises([]) }
       finally{ if(mounted) setLoading(false) }
     }
@@ -293,9 +298,16 @@ export default function Workout(){
 
                   {exercises.filter(e => (e.category || 'Generale') === selectedCategory).map(ex => (
                     <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{ex.title}</div>
-                        <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                      <div className="flex items-center gap-3">
+                        {ex.image_url ? (
+                          <img src={ex.image_url} alt={ex.title} className="w-16 h-12 object-cover rounded-md" />
+                        ) : (
+                          <div className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400">No img</div>
+                        )}
+                        <div>
+                          <div className="font-semibold">{ex.title}</div>
+                          <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                        </div>
                       </div>
                       <div className="text-sm text-primary">Avvia</div>
                     </button>
@@ -308,6 +320,9 @@ export default function Workout(){
         {current && (
           <div className="flex-1 overflow-auto">
             <div className="md-card p-4 rounded-xl bg-surface mb-4">
+              {current.image_url && (
+                <img src={current.image_url} alt={current.title} className="w-full h-40 object-cover rounded-md mb-3" />
+              )}
               <h3 className="text-xl font-semibold">{current.title}</h3>
               <p className="text-sm text-gray-600 mt-2">{current.description}</p>
             </div>

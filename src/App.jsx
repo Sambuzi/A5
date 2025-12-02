@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Home from './pages/Home'
 import Workout from './pages/Workout'
 import Progress from './pages/Progress'
+import AdminExercises from './pages/AdminExercises'
 import Profile from './pages/Profile'
 import ProfileEdit from './pages/ProfileEdit'
 import Settings from './pages/Settings'
@@ -25,6 +26,7 @@ export default function App(){
         <Route path="/" element={<Home/>} />
         <Route path="/workout" element={<Workout/>} />
         <Route path="/progress" element={<Progress/>} />
+        <Route path="/admin/exercises" element={<AdminExercises/>} />
         <Route path="/profile" element={<Profile/>} />
         <Route path="/profile/edit" element={<ProfileEdit/>} />
         <Route path="/settings" element={<Settings/>} />
