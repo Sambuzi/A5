@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
+import useProfile from '../hooks/useProfile'
 import AppBar from '../components/AppBar'
 
 export default function ProfileEdit(){
@@ -13,6 +14,7 @@ export default function ProfileEdit(){
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [avatarFile, setAvatarFile] = useState(null)
   const navigate = useNavigate()
+  const { saveProfile } = useProfile()
 
   useEffect(()=>{
     let mounted = true
@@ -86,15 +88,14 @@ export default function ProfileEdit(){
       }
 
       const payload = {
-        id: user.id,
         full_name: fullName,
         level,
         goal,
       }
       if(uploadedUrl) payload.avatar_url = uploadedUrl
 
-      const { data, error } = await supabase.from('profiles').upsert(payload)
-      if(error) throw error
+      // use saveProfile to persist and update sessionStorage cache
+      await saveProfile(payload)
 
       navigate('/profile')
     }catch(e){

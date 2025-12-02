@@ -10,17 +10,6 @@ import useProfile from '../hooks/useProfile'
 import { useNavigate } from 'react-router-dom'
 
 export default function Profile(){
-  const PROFILE_LOADED_KEY = 'wellgym_profile_loaded_v1'
-  const PROFILE_CACHE_KEY = 'wellgym_profile_cache_v1'
-
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(()=>{
-    try{
-      return !sessionStorage.getItem(PROFILE_LOADED_KEY)
-    }catch(e){
-      return true
-    }
-  })
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -43,14 +32,12 @@ export default function Profile(){
   const { profile: loadedProfile, loading: profileLoading, error: profileError, updateField, saveProfile } = useProfile()
 
   useEffect(()=>{
-    // sync hook-provided profile into local state when loaded
+    // sync hook-provided profile into local edit fields when loaded
     if(loadedProfile){
-      setProfile(loadedProfile)
       setNameEdit(loadedProfile.name)
       setLevelEdit(loadedProfile.level)
       setGoalEdit(loadedProfile.goal)
       setBioEdit(loadedProfile.bio || '')
-      
     }
   }, [loadedProfile])
 
@@ -66,12 +53,12 @@ export default function Profile(){
       if(!el) return
       if(!el.contains(e.target)){
         setEditingField(null)
-        setLevelEdit(profile?.level ?? levelEdit)
+        setLevelEdit(loadedProfile?.level ?? levelEdit)
       }
     }
     document.addEventListener('mousedown', onDocClick)
     return ()=> document.removeEventListener('mousedown', onDocClick)
-  }, [editingField, profile, levelEdit])
+  }, [editingField, loadedProfile, levelEdit])
 
   function onAvatarClick(){
     if(fileInputRef.current) fileInputRef.current.click()
@@ -117,18 +104,14 @@ export default function Profile(){
         
       }
       if(uploadedUrl) payload.avatar_url = uploadedUrl
-      // use hook to save and update cache
-      const merged = await saveProfile({
+      // use hook to save and update cache/UI
+      await saveProfile({
         full_name: nameEdit,
         level: levelEdit,
         goal: goalEdit,
         bio: bioEdit,
-        
         ...(uploadedUrl ? { avatar_url: uploadedUrl } : {})
       })
-
-      // reflect saved profile in UI
-      setProfile(merged)
       setAvatarFile(null)
       if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
       setEditing(false)
@@ -174,11 +157,11 @@ export default function Profile(){
     navigate('/login')
   }
 
-  const displayName = profile?.name ?? 'Utente'
+  const displayName = loadedProfile?.name ?? 'Utente'
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=EDE9FE&color=5B21B6&size=128`
 
-  const isLoading = loading
-  const hasError = Boolean(error)
+  const isLoading = profileLoading
+  const hasError = Boolean(error || profileError)
 
   return (
     <div className="p-0 flex-1 min-h-0">
@@ -186,15 +169,13 @@ export default function Profile(){
       <div className="p-4 pb-24">
       <h1 className="text-xl font-semibold mb-3">Profilo</h1>
 
-      {isLoading && (
-        <div className="p-3 mb-4 bg-yellow-50 text-yellow-800 rounded">Caricamento profilo…</div>
-      )}
+      {/* Loading UI removed to avoid persistent 'Caricamento profilo' message */}
       {hasError && (
         <div className="p-3 mb-4 bg-red-50 text-red-700 rounded">Errore: {error}</div>
       )}
 
       <ProfileHeader
-        profile={profile}
+        profile={loadedProfile}
         editing={editing}
         nameEdit={nameEdit}
         setNameEdit={setNameEdit}
@@ -206,26 +187,26 @@ export default function Profile(){
         saving={saving}
         onCancelEdit={()=>{ 
           setEditing(false);
-          setNameEdit(profile?.name ?? nameEdit);
-          setLevelEdit(profile?.level ?? levelEdit);
-          setGoalEdit(profile?.goal ?? goalEdit);
-          setBioEdit(profile?.bio || '');
+          setNameEdit(loadedProfile?.name ?? nameEdit);
+          setLevelEdit(loadedProfile?.level ?? levelEdit);
+          setGoalEdit(loadedProfile?.goal ?? goalEdit);
+          setBioEdit(loadedProfile?.bio || '');
           
           setAvatarFile(null);
           if(previewUrl){ URL.revokeObjectURL(previewUrl); setPreviewUrl(null) }
         }}
         onEdit={()=>{ 
           setEditing(true);
-          setNameEdit(profile?.name ?? nameEdit);
-          setLevelEdit(profile?.level ?? levelEdit);
-          setGoalEdit(profile?.goal ?? goalEdit);
-          setBioEdit(profile?.bio || '');
+          setNameEdit(loadedProfile?.name ?? nameEdit);
+          setLevelEdit(loadedProfile?.level ?? levelEdit);
+          setGoalEdit(loadedProfile?.goal ?? goalEdit);
+          setBioEdit(loadedProfile?.bio || '');
           
         }}
       />
       <div className="space-y-3">
         <ProfileDetails
-          profile={profile}
+          profile={loadedProfile}
           editingField={editingField}
           setEditingField={setEditingField}
           levelEdit={levelEdit}
@@ -236,7 +217,7 @@ export default function Profile(){
         />
 
         <ProfilePreferences
-          profile={profile}
+          profile={loadedProfile}
           editing={editing}
           bioEdit={bioEdit}
           setBioEdit={setBioEdit}

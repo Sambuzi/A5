@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useToasts } from '../../components/ToastProvider'
 
 export default function ProfileDetails({
   profile,
@@ -11,6 +12,7 @@ export default function ProfileDetails({
   setGoalEdit,
   updateProfileField,
 }){
+  const { addToast } = useToasts()
   return (
     <div className="space-y-3">
       <div role="button" onClick={()=>{ if(!editingField) { setEditingField('level'); setLevelEdit(profile?.level ?? levelEdit) } }} className="bg-white p-3 rounded-md flex items-center justify-between cursor-pointer">
@@ -32,8 +34,12 @@ export default function ProfileDetails({
                                 ev.stopPropagation();
                                 try{
                                   await updateProfileField('level', l)
-                                }catch(e){ console.error(e) }
-                                setEditingField(null)
+                                  addToast({ title: 'Salvato', message: `Livello aggiornato a ${l}`, type: 'default' })
+                                  setEditingField(null)
+                                }catch(e){ 
+                                  console.error(e)
+                                  addToast({ title: 'Errore', message: 'Impossibile salvare il livello', type: 'default' })
+                                }
                               }}
                               className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 ${profile?.level === l ? 'bg-gray-50 font-medium' : ''}`}
                             >
