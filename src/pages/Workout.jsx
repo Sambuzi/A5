@@ -318,7 +318,7 @@ export default function Workout(){
                       <button type="button" onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }} className="flex-1 text-left flex items-center gap-3">
                         <div className="flex items-center gap-3">
                           {ex.image_url ? (
-                            <img src={ex.image_url} alt={ex.title} className="w-16 h-12 object-cover rounded-md" />
+                            <img src={ex.image_url} alt={ex.title} className="w-16 h-12 object-contain object-center rounded-md bg-gray-100 p-1" />
                           ) : (
                             <div className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400">No img</div>
                           )}
@@ -343,7 +343,7 @@ export default function Workout(){
           <div className="flex-1 overflow-auto">
             <div className="md-card p-4 rounded-xl bg-surface mb-4">
               {current.image_url && (
-                <img src={current.image_url} alt={current.title} className="w-full h-40 object-cover rounded-md mb-3" />
+                <img src={current.image_url} alt={current.title} className="w-full h-40 object-contain object-center rounded-md mb-3 bg-gray-50 p-2" />
               )}
               <h3 className="text-xl font-semibold">{current.title}</h3>
 
