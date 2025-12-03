@@ -15,7 +15,9 @@ export default function Progress(){
     async function load(){
       const user = (await supabase.auth.getUser()).data?.user
       // sample fetch: aggregated by day (user should create proper view/table)
-      const { data: rows } = await supabase.from('workouts').select('performed_at,duration')
+      // only fetch current user's workouts and limit to last 7 days to match the trend table
+      const since = new Date(Date.now() - (6 * 24 * 60 * 60 * 1000)).toISOString()
+      const { data: rows } = await supabase.from('workouts').select('performed_at,duration').eq('user_id', user?.id).gte('performed_at', since)
       const week = Array.from({length:7}, ()=>0)
       const now = new Date()
 
@@ -26,10 +28,15 @@ export default function Progress(){
         return d.toLocaleDateString(undefined, { weekday: 'short' })
       })
 
+      // compute start-of-day millis for today once (local timezone)
+      const msDay = 1000 * 60 * 60 * 24
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+
       rows?.forEach(r=>{
         const d = new Date(r.performed_at)
-        const diff = Math.floor((now - d) / (1000*60*60*24))
-        if(diff < 7) week[6-diff] += (r.duration || 0)/60
+        const startOfR = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+        const diff = Math.round((startOfToday - startOfR) / msDay)
+        if(diff < 7 && diff >= 0) week[6-diff] += (r.duration || 0)/60
       })
 
       setData({ labels, datasets:[{ label:'Ore allenamento (ultimi 7 giorni)', data: week, backgroundColor:'#4f46e5' }] })
