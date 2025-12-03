@@ -189,7 +189,7 @@ export default function ProgressTrend(){
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm text-gray-500">Trend allenamenti</div>
-            <div className="font-medium">Dettagli allenamenti ({rangeDays} giorni)</div>
+            <div className="font-medium">Dettagli allenamenti</div>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-xs text-gray-500">Intervallo</div>
@@ -198,7 +198,6 @@ export default function ProgressTrend(){
                 <button key={d} onClick={()=>setRangeDays(d)} className={`px-2 py-1 rounded text-sm ${rangeDays===d ? 'bg-primary text-white' : 'bg-gray-100'}`}>{d}g</button>
               ))}
             </div>
-            <button onClick={()=>downloadCSV(workouts, `progress_${rangeDays}d.csv`)} className="px-3 py-1 bg-gray-100 rounded text-sm">Export CSV</button>
           </div>
         </div>
 
