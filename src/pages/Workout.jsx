@@ -109,6 +109,9 @@ export default function Workout(){
   const [selectedCategory, setSelectedCategory] = useState(null) // selected workout type/category
   const [reps, setReps] = useState(10)
   const [message, setMessage] = useState(null)
+  const [showInstructions, setShowInstructions] = useState(false)
+  const [instructionsText, setInstructionsText] = useState('')
+  const [showInstructionsInline, setShowInstructionsInline] = useState(false)
 
   const { profile } = useProfile()
   const toasts = useToasts()
@@ -311,20 +314,25 @@ export default function Workout(){
                   </div>
 
                   {exercises.filter(e => (e.category || 'Generale') === selectedCategory).map(ex => (
-                    <button key={ex.id} onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {ex.image_url ? (
-                          <img src={ex.image_url} alt={ex.title} className="w-16 h-12 object-cover rounded-md" />
-                        ) : (
-                          <div className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400">No img</div>
-                        )}
-                        <div>
-                          <div className="font-semibold">{ex.title}</div>
-                          <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                    <div key={ex.id} className="w-full md-card p-4 rounded-xl bg-surface flex items-center justify-between">
+                      <button type="button" onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }} className="flex-1 text-left flex items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          {ex.image_url ? (
+                            <img src={ex.image_url} alt={ex.title} className="w-16 h-12 object-cover rounded-md" />
+                          ) : (
+                            <div className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400">No img</div>
+                          )}
+                          <div>
+                            <div className="font-semibold">{ex.title}</div>
+                            <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                          </div>
                         </div>
+                      </button>
+                      <div className="flex flex-col items-end ml-3">
+                        <button type="button" className="text-sm text-primary mb-2" onClick={(ev)=>{ ev.stopPropagation(); setInstructionsText(ex.description || 'Nessuna istruzione disponibile.'); setShowInstructions(true); }}>Istruzioni</button>
+                        <button type="button" className="text-sm text-primary" onClick={()=>{ setSelected(ex.id); setReps(10); setMessage(null); const durMin = (ex.default_duration ?? preferredMinutes); setInitialSeconds(durMin * 60); }}>Avvia</button>
                       </div>
-                      <div className="text-sm text-primary">Avvia</div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -338,7 +346,16 @@ export default function Workout(){
                 <img src={current.image_url} alt={current.title} className="w-full h-40 object-cover rounded-md mb-3" />
               )}
               <h3 className="text-xl font-semibold">{current.title}</h3>
-              <p className="text-sm text-gray-600 mt-2">{current.description}</p>
+
+              <div className="mt-3">
+                <button className="px-3 py-2 bg-white border border-gray-200 rounded text-sm" onClick={()=>{ setInstructionsText(current.description || 'Nessuna istruzione disponibile.'); setShowInstructionsInline(s => !s) }}>{showInstructionsInline ? 'Nascondi istruzioni' : 'Mostra istruzioni'}</button>
+              </div>
+
+              {showInstructionsInline && (
+                <div className="mt-3 bg-gray-50 p-3 rounded text-sm text-gray-700 whitespace-pre-wrap">
+                  {instructionsText}
+                </div>
+              )}
             </div>
 
             <div className="mb-3">
@@ -399,6 +416,21 @@ export default function Workout(){
         )}
       </div>
       <BottomNav />
+      {showInstructions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-50" onClick={()=>setShowInstructions(false)} />
+          <div className="relative max-w-lg w-full bg-white rounded shadow-lg p-4 z-10">
+            <div className="flex items-start justify-between">
+              <h4 className="text-lg font-semibold">Istruzioni</h4>
+              <button className="text-gray-500" onClick={()=>setShowInstructions(false)}>✕</button>
+            </div>
+            <div className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{instructionsText}</div>
+            <div className="mt-4 text-right">
+              <button className="px-3 py-2 bg-primary text-white rounded" onClick={()=>setShowInstructions(false)}>Chiudi</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
