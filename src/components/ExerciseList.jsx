@@ -76,6 +76,7 @@ export default function ExerciseList({
                   <div>
                     <div className="font-semibold">{ex.title}</div>
                     <div className="text-sm text-gray-600 mt-1">{ex.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">Serie: <span className="font-medium">{ex.default_sets ?? '-'}</span> · Ripetizioni: <span className="font-medium">{ex.default_reps ?? '-'}</span></div>
                   </div>
                 </div>
               </button>

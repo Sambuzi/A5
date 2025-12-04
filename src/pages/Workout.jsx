@@ -74,6 +74,9 @@ export default function Workout(){
   const [showInstructions, setShowInstructions] = useState(false)
   const [instructionsText, setInstructionsText] = useState('')
   const [showInstructionsInline, setShowInstructionsInline] = useState(false)
+  const [setsTotal, setSetsTotal] = useState(3)
+  const [currentSet, setCurrentSet] = useState(0)
+  const [weightUsed, setWeightUsed] = useState('')
 
   const { profile } = useProfile()
   const toasts = useToasts()
@@ -120,8 +123,8 @@ export default function Workout(){
       if(mounted) setLevel(finalLevel)
 
       try{
-        // include `category` and `default_duration` so frontend can group exercises and compute durations
-        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration, image_url').eq('level', finalLevel).order('created_at', { ascending: true })
+        // include `category`, `default_duration`, `default_sets` and `default_reps` so frontend can group exercises and compute durations/sets
+        const { data, error } = await supabase.from('exercises').select('id, level, category, title, description, demo_url, default_duration, default_sets, default_reps, image_url').eq('level', finalLevel).order('created_at', { ascending: true })
         if(error) throw error
         // for quick local demo: ensure every exercise without an image shows a deterministic sample (non-persistent)
         const withSamples = (data || []).map((ex) => ({ ...ex, image_url: ex.image_url || sampleForTitle(ex.title) }))
@@ -144,8 +147,9 @@ export default function Workout(){
         const first = groups[cat][0]
         setSelectedCategory(cat)
         setSelected(first.id)
-        setReps(10)
-        // set timer to category/exercise default if available
+        // initialize reps/sets and timer using exercise defaults when available
+        setReps(first.default_reps ?? 10)
+        setSetsTotal(first.default_sets ?? setsTotal)
         const durMin = (first.default_duration ?? preferredMinutes)
         setInitialSeconds(durMin * 60)
         setMessage(null)
@@ -198,6 +202,36 @@ export default function Workout(){
     }catch(e){ console.error('saveCompleted error', e); setMessage('Errore salvataggio') }
   }
 
+  async function saveSet(durationSec, ex){
+    try{
+      const user = (await supabase.auth.getUser()).data?.user
+
+      const raw = sessionStorage.getItem('wellgym_profile_cache_v1')
+      let cached = null
+      try{ if(raw) cached = JSON.parse(raw) }catch(e){ cached = null }
+      const weightVal = weightUsed || (profile?.weight ?? cached?.weight ?? 70)
+
+      const payload = { user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date(), set_number: currentSet + 1, sets_total: Number(setsTotal), weight_used: Number(weightVal) }
+      let res = await supabase.from('workouts').insert([payload])
+      const addToast = toasts?.addToast
+
+      if(res.error){
+        // retry without extra fields if DB schema missing
+        console.warn('Saving set with extras failed, retrying without extras', res.error)
+        const { error } = await supabase.from('workouts').insert([{ user_id: user?.id || null, exercise: ex.title, duration: durationSec, reps, performed_at: new Date() }])
+        if(error) throw error
+        if(addToast) addToast({ title: 'Serie salvata', message: `${ex.title} — salvata localmente` })
+        setMessage('Serie salvata (locale)')
+      }else{
+        if(addToast) addToast({ title: 'Serie salvata', message: `${ex.title} — serie ${currentSet + 1} salvata` })
+        setMessage(`Serie ${currentSet + 1} salvata`)
+      }
+
+      // advance current set and start a short rest (optional UI hook)
+      setCurrentSet(s => Math.min(Number(setsTotal), s + 1))
+    }catch(e){ console.error('saveSet error', e); setMessage('Errore salvataggio serie') }
+  }
+
   const current = selected ? exercises.find(e=>e.id===selected) : null
   // group exercises by category for UI and navigation
   const groups = exercises.reduce((acc, ex) => {
@@ -214,6 +248,32 @@ export default function Workout(){
   }
   const filteredCats = cats.filter(cat => totalsByCat[cat] >= (preferredMinutes || 0))
   const anyMatch = filteredCats.length > 0
+
+  // when selected changes, initialize sets/reps/duration from exercise defaults if present
+  useEffect(()=>{
+    if(!selected) return
+    const ex = exercises.find(e=>e.id===selected)
+    if(!ex) return
+    // set reps and sets from exercise defaults when available
+    if(ex.default_reps != null) setReps(Number(ex.default_reps))
+    if(ex.default_sets != null) setSetsTotal(Number(ex.default_sets))
+    if(ex.default_duration != null) setInitialSeconds(Number(ex.default_duration) * 60)
+    // load number of sets already recorded for this user & exercise today
+    ;(async ()=>{
+      try{
+        const user = (await supabase.auth.getUser()).data?.user
+        if(!user) return
+        const start = new Date()
+        start.setHours(0,0,0,0)
+        const startISO = start.toISOString()
+        const { data, error, count } = await supabase.from('workouts').select('id', { count: 'exact' }).eq('exercise', ex.title).eq('user_id', user.id).gte('performed_at', startISO)
+        if(error){ console.warn('Could not fetch existing sets count', error); return }
+        // if there are saved sets today, use that count; otherwise fall back to exercise default_sets
+        const resolved = (count && Number(count) > 0) ? Number(count) : (ex.default_sets != null ? Number(ex.default_sets) : 0)
+        setCurrentSet(resolved)
+      }catch(err){ console.error('Error loading existing sets count', err) }
+    })()
+  }, [selected, exercises])
 
   return (
     <div className="p-0 flex-1 min-h-0">
@@ -266,14 +326,18 @@ export default function Workout(){
               <Timer key={selected} initialSeconds={initialSeconds} onComplete={(secs)=>saveCompleted(secs, current)} />
             </div>
 
-            <div className="mt-4 bg-white p-3 rounded shadow flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500">Ripetizioni</div>
-                <div className="text-lg font-semibold">{reps}</div>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-3 py-2 bg-gray-200 rounded" onClick={()=>setReps(r=>Math.max(1,r-1))}>-</button>
-                <button className="px-3 py-2 bg-gray-200 rounded" onClick={()=>setReps(r=>r+1)}>+</button>
+            {/* Summary card: show current set number and repetitions */}
+            <div className="md-card p-4 rounded-xl bg-white mb-4 shadow-sm">
+              <div className="flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <div className="text-xs text-gray-500">Serie</div>
+                  <div className="text-2xl font-semibold">{currentSet}</div>
+                </div>
+                <div className="border-l h-10 mx-4" />
+                <div className="text-center">
+                  <div className="text-xs text-gray-500">Ripetizioni</div>
+                  <div className="text-2xl font-semibold">{reps}</div>
+                </div>
               </div>
             </div>
 
@@ -310,7 +374,18 @@ export default function Workout(){
                   }}>Termina allenamento</button>
                 )
               })()}
-              <button aria-label="Indietro" className="px-4 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 flex items-center gap-2" onClick={()=>setSelected(null)}>
+              <button aria-label="Indietro" className="px-4 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 flex items-center gap-2" onClick={()=>{
+                const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
+                const idx = list.findIndex(x => x.id === current.id)
+                if(idx > 0){
+                  const prev = list[idx-1]
+                  setSelected(prev.id)
+                  setReps(10)
+                  setMessage(null)
+                }else{
+                  setSelected(null)
+                }
+              }}>
                 <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
                 <span>Indietro</span>
               </button>
