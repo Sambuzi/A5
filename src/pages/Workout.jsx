@@ -232,6 +232,28 @@ export default function Workout(){
     }catch(e){ console.error('saveSet error', e); setMessage('Errore salvataggio serie') }
   }
 
+  // called when timer completes: save the completed set/exercise and advance to next exercise if available
+  async function handleTimerComplete(secs){
+    try{
+      if(current) await saveCompleted(secs, current)
+      // move to next exercise in same category, similar to 'Successivo' button
+      const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current?.category || 'Generale')))
+      const idx = list.findIndex(x => x.id === current?.id)
+      const isLast = !(idx >= 0 && idx < list.length - 1)
+      if(!isLast){
+        const next = list[idx+1]
+        setSelected(next.id)
+        setReps(10)
+        setMessage(null)
+      }else{
+        // finish workout
+        setSelected(null)
+        setSelectedCategory(null)
+        setMessage('Allenamento completato')
+      }
+    }catch(e){ console.error('handleTimerComplete error', e) }
+  }
+
   const current = selected ? exercises.find(e=>e.id===selected) : null
   // group exercises by category for UI and navigation
   const groups = exercises.reduce((acc, ex) => {
@@ -323,7 +345,7 @@ export default function Workout(){
 
             <div className="mb-3">
               {/* remount Timer when selected changes so it resets */}
-              <Timer key={selected} initialSeconds={initialSeconds} onComplete={(secs)=>saveCompleted(secs, current)} />
+              <Timer key={selected} initialSeconds={initialSeconds} onComplete={handleTimerComplete} />
             </div>
 
             {/* Summary card: show current set number and repetitions */}
