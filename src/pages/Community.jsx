@@ -7,10 +7,15 @@ import { supabase } from '../lib/supabaseClient'
 function MessageBubble({ m }){
   return (
     <div className={`flex ${m.own ? 'justify-end' : 'justify-start'}`}>
-      <div className={`md-card p-3 rounded-xl ${m.own ? 'bg-primary/10' : 'bg-surface'} max-w-[85%]`}> 
-        <div className="text-sm font-semibold" style={{color: '#000'}}>{m.user}</div>
+      <div className={`md-card p-3 rounded-xl ${m.own ? 'bg-primary/10' : 'bg-surface'} max-w-[85%] flex items-start gap-3`}> 
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+          <img src={m.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.user || 'Utente')}&background=EDE9FE&color=5B21B6&size=128`} alt="avatar" className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold" style={{color: '#000'}}>{m.user}</div>
         <div className="mt-1 text-sm text-gray-800">{m.text}</div>
         <div className="text-xs text-gray-400 mt-2">{new Date(m.at).toLocaleTimeString()}</div>
+        </div>
       </div>
     </div>
   )
@@ -44,14 +49,32 @@ export default function Community(){
       if(error){
         console.error('Error loading community messages', error)
       } else if(mounted){
-        setMessages((data || []).map(d => ({ id: d.id, user: d.username || d.user_id, text: d.content, at: new Date(d.created_at), own: false })))
+        const rows = data || []
+        // collect user ids to fetch avatars
+        const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)))
+        let avatarsMap = {}
+        if(userIds.length > 0){
+          try{
+            const prof = await supabase.from('profiles').select('id, avatar_url').in('id', userIds)
+            if(prof.error){ console.warn('Error fetching profile avatars', prof.error) }
+            else if(prof.data){ avatarsMap = (prof.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p.avatar_url }), {}) }
+          }catch(e){ console.warn('profiles fetch failed', e) }
+        }
+
+        setMessages(rows.map(d => ({ id: d.id, user: d.username || d.user_id, text: d.content, at: new Date(d.created_at), own: false, avatar_url: avatarsMap[d.user_id] })) )
       }
 
       // subscribe to new messages
       channel = supabase.channel('public:community_messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'community_messages' }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'community_messages' }, async (payload) => {
           const d = payload.new
-          setMessages(prev => [...prev, { id: d.id, user: d.username || d.user_id, text: d.content, at: new Date(d.created_at), own: false }])
+          // attempt to fetch avatar for this user_id
+          let avatar = null
+          try{
+            const prof = await supabase.from('profiles').select('avatar_url').eq('id', d.user_id).single()
+            if(!prof.error && prof.data) avatar = prof.data.avatar_url
+          }catch(e){ console.warn('avatar fetch failed for new message', e) }
+          setMessages(prev => [...prev, { id: d.id, user: d.username || d.user_id, text: d.content, at: new Date(d.created_at), own: false, avatar_url: avatar }])
         })
         .subscribe()
 
