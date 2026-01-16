@@ -13,16 +13,6 @@ export default function useProfile(){
 
   useEffect(()=>{
     let mounted = true
-
-    // try to read cached profile and render immediately
-    try{
-      const raw = sessionStorage.getItem(PROFILE_CACHE_KEY)
-      if(raw){
-        const cached = JSON.parse(raw)
-        if(mounted){ setProfile(cached); setLoading(false) }
-      }
-    }catch(e){ /* ignore */ }
-
     async function load(){
       setLoading(true)
       try{
@@ -37,11 +27,15 @@ export default function useProfile(){
           .eq('id', user.id)
           .single()
 
-        // read cached profile to avoid overwriting with empty/NULL server values
+        // read cached profile for the current user to avoid overwriting with empty/NULL server values
         let cached = null
         try{
           const raw = sessionStorage.getItem(PROFILE_CACHE_KEY)
-          if(raw) cached = JSON.parse(raw)
+          if(raw){
+            const parsed = JSON.parse(raw)
+            // only accept cached profile if it belongs to the authenticated user
+            if(parsed && parsed.id && parsed.id === user.id) cached = parsed
+          }
         }catch(e){ cached = null }
 
         const p = {
