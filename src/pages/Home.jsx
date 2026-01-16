@@ -106,6 +106,7 @@ export default function Home() {
         </Link>
       </div>
       
+      <div className="h-20" aria-hidden="true" />
       <BottomNav />
     </div>
     </div>
