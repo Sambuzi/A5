@@ -4,6 +4,14 @@ import AppBar from '../components/AppBar'
 import BottomNav from '../components/BottomNav'
 import { supabase } from '../lib/supabaseClient'
 
+function generatePseudonym(userId){
+  if(!userId) return 'Utente anonimo'
+  let h = 0
+  for(let i = 0; i < userId.length; i++) h = ((h << 5) - h) + userId.charCodeAt(i)
+  const num = Math.abs(h) % 10000
+  return `Utente${String(num).padStart(4, '0')}`
+}
+
 function MessageBubble({ m }){
   return (
     <div className={`flex ${m.own ? 'justify-end' : 'justify-start'}`}>
@@ -25,6 +33,26 @@ export default function Community(){
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const listRef = useRef(null)
+
+  function getDateKey(d){
+    try{ const dt = (d instanceof Date) ? d : new Date(d); return dt.toISOString().slice(0,10) }catch(e){ return '' }
+  }
+
+  function getDateLabel(d){
+    try{ const dt = (d instanceof Date) ? d : new Date(d); return dt.toLocaleDateString() }catch(e){ return '' }
+  }
+
+  function groupMessagesByDate(msgs){
+    const map = {}
+    for(const m of (msgs || [])){
+      const key = getDateKey(m.at || m.created_at || new Date())
+      if(!map[key]) map[key] = { date: key, label: getDateLabel(m.at || m.created_at || new Date()), messages: [] }
+      map[key].messages.push(m)
+    }
+    // sort keys (oldest first)
+    const keys = Object.keys(map).sort((a,b)=> a.localeCompare(b))
+    return keys.map(k=> ({ ...map[k], messages: map[k].messages.sort((x,y)=> new Date(x.at || x.created_at) - new Date(y.at || y.created_at)) }))
+  }
 
   const [loading, setLoading] = useState(true)
 
@@ -69,8 +97,9 @@ export default function Community(){
           const p = profilesMap[d.user_id] || {}
           const isPublic = (typeof p.is_public === 'boolean') ? p.is_public : true
           const isOwner = me && d.user_id === me
-          const displayName = (isOwner || isPublic) ? (d.username || p.full_name || d.user_id) : 'Utente anonimo'
-          const avatar = (isOwner || isPublic) ? p.avatar_url : null
+          // show real name/avatar only when profile is_public === true
+          const displayName = isPublic ? (d.username || p.full_name || d.user_id) : generatePseudonym(d.user_id)
+          const avatar = isPublic ? p.avatar_url : null
           return { id: d.id, user: displayName, text: d.content, at: new Date(d.created_at), own: Boolean(isOwner), avatar_url: avatar }
         }))
       }
@@ -88,8 +117,8 @@ export default function Community(){
             if(!prof.error && prof.data){
               const p = prof.data
               const isPublic = (typeof p.is_public === 'boolean') ? p.is_public : true
-              avatar = (isOwner || isPublic) ? p.avatar_url : null
-              displayName = (isOwner || isPublic) ? (d.username || p.full_name || d.user_id) : 'Utente anonimo'
+              avatar = isPublic ? p.avatar_url : null
+              displayName = isPublic ? (d.username || p.full_name || d.user_id) : generatePseudonym(d.user_id)
             }
           }catch(e){ console.warn('avatar fetch failed for new message', e) }
           setMessages(prev => [...prev, { id: d.id, user: displayName, text: d.content, at: new Date(d.created_at), own: Boolean(isOwner), avatar_url: avatar }])
@@ -151,8 +180,15 @@ export default function Community(){
         </div>
 
         <div ref={listRef} className="flex-1 overflow-auto flex flex-col gap-3 mb-3">
-          {messages.map(m=> (
-            <MessageBubble key={m.id} m={m} />
+          {groupMessagesByDate(messages).map(group => (
+            <div key={group.date} className="space-y-3">
+              <div className="flex justify-center">
+                <div className="text-xs text-gray-500 bg-white/60 px-3 py-1 rounded-full">{group.label}</div>
+              </div>
+              {group.messages.map(m => (
+                <MessageBubble key={m.id} m={m} />
+              ))}
+            </div>
           ))}
         </div>
 

@@ -31,24 +31,30 @@ export default function ExerciseList({
                 )}
                 {displayCats.map(cat => {
                   const totalMinutes = (groups[cat] || []).reduce((sum, ex) => sum + (ex.default_duration != null ? Number(ex.default_duration) : preferredMinutes), 0)
+                  const openCategory = () => {
+                    const first = groups[cat]?.[0]
+                    setSelectedCategory(cat)
+                    if(first){
+                      setSelected(first.id)
+                      setReps(10)
+                      const durMin = (first.default_duration ?? preferredMinutes)
+                      setInitialSeconds(durMin * 60)
+                      setMessage(null)
+                    }
+                  }
+
                   return (
-                    <button key={cat} onClick={()=>{
-                      const first = groups[cat]?.[0]
-                      setSelectedCategory(cat)
-                      if(first){
-                        setSelected(first.id)
-                        setReps(10)
-                        const durMin = (first.default_duration ?? preferredMinutes)
-                        setInitialSeconds(durMin * 60)
-                        setMessage(null)
-                      }
-                    }} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between">
-                      <div>
+                    <div key={cat} className="w-full text-left md-card p-4 rounded-xl bg-surface flex items-center justify-between" onClick={openCategory} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key === 'Enter' || e.key === ' ') openCategory() }}>
+                      <div className="flex-1">
                         <div className="font-semibold">{cat}</div>
                         <div className="text-sm text-gray-600 mt-1">{groups[cat].length} esercizi · {Math.round(totalMinutes)} min</div>
                       </div>
-                      <div className="text-sm text-primary">Apri</div>
-                    </button>
+
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-primary">Apri</div>
+                        <button type="button" className="text-sm text-primary" onClick={(ev) => { ev.stopPropagation(); setSelectedCategory(cat); setMessage(null); }} aria-label={`Apri dettagli ${cat}`}>Dettagli</button>
+                      </div>
+                    </div>
                   )
                 })}
               </>

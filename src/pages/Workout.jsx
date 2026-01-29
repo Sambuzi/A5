@@ -255,6 +255,10 @@ export default function Workout(){
   }
 
   const current = selected ? exercises.find(e=>e.id===selected) : null
+  const list = current ? exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale'))) : []
+  const idx = current ? list.findIndex(x=>x.id===current.id) : -1
+  const isLast = !(idx >= 0 && idx < list.length - 1)
+  const isFirst = idx === 0
   // group exercises by category for UI and navigation
   const groups = exercises.reduce((acc, ex) => {
     const cat = ex.category || 'Generale'
@@ -325,7 +329,7 @@ export default function Workout(){
           )}
 
         {current && (
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto pb-24">
             <div className="md-card p-4 rounded-xl bg-surface mb-4">
               {current.image_url && (
                 <img src={current.image_url} alt={current.title} className="w-full h-40 object-contain object-center rounded-md mb-3 bg-gray-50 p-2" />
@@ -369,10 +373,6 @@ export default function Workout(){
               <button aria-label="Segna completato" className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300" onClick={()=>saveCompleted(initialSeconds, current)}>Segna completato</button>
 
               {(() => {
-                const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
-                const idx = list.findIndex(x => x.id === current.id)
-                const isLast = !(idx >= 0 && idx < list.length - 1)
-
                 if(!isLast){
                   return (
                     <button aria-label="Successivo" className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 flex items-center gap-2" onClick={()=>{
@@ -396,21 +396,21 @@ export default function Workout(){
                   }}>Termina allenamento</button>
                 )
               })()}
-              <button aria-label="Indietro" className="px-4 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 flex items-center gap-2" onClick={()=>{
-                const list = exercises.filter(e => (e.category || 'Generale') === (selectedCategory || (current.category || 'Generale')))
-                const idx = list.findIndex(x => x.id === current.id)
-                if(idx > 0){
-                  const prev = list[idx-1]
-                  setSelected(prev.id)
-                  setReps(10)
-                  setMessage(null)
-                }else{
-                  setSelected(null)
-                }
-              }}>
-                <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
-                <span>Indietro</span>
-              </button>
+              {!isFirst && (
+                <button aria-label="Indietro" className="px-4 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 flex items-center gap-2" onClick={()=>{
+                  if(idx > 0){
+                    const prev = list[idx-1]
+                    setSelected(prev.id)
+                    setReps(10)
+                    setMessage(null)
+                  }else{
+                    setSelected(null)
+                  }
+                }}>
+                  <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
+                  <span>Indietro</span>
+                </button>
+              )}
             </div>
           </div>
         )}

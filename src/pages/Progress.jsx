@@ -5,12 +5,35 @@ import { Chart, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js
 import AppBar from '../components/AppBar'
 import BottomNav from '../components/BottomNav'
 import ProgressTrend from '../components/ProgressTrend'
+import useProfile from '../hooks/useProfile'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip)
 
 export default function Progress(){
+  const { profile } = useProfile()
   const [data, setData] = useState(null)
   const [summary, setSummary] = useState(null)
+
+  function formatWeeklyGoal(goal){
+    if(!goal) return null
+    // try to parse simple formats like "30 min/die" or "1.5 ore"
+    const raw = String(goal).toLowerCase()
+    const minMatch = raw.match(/([0-9]+(?:\.[0-9]+)?)\s*min/)
+    if(minMatch){
+      const perDay = Number(minMatch[1])
+      const totalMin = perDay * 7
+      if(totalMin >= 60) return `${+(totalMin/60).toFixed(1)} ore/settimana`
+      return `${totalMin} min/settimana`
+    }
+    const hourMatch = raw.match(/([0-9]+(?:\.[0-9]+)?)\s*(ore|h|hr)/)
+    if(hourMatch){
+      const perDay = Number(hourMatch[1])
+      const totalH = perDay * 7
+      return `${+(totalH).toFixed(1)} ore/settimana`
+    }
+    // fallback: show the raw goal text
+    return `${goal} (impostato)`
+  }
 
   useEffect(()=>{
     async function load(){
@@ -90,9 +113,9 @@ export default function Progress(){
         <div className="p-4 rounded-lg bg-white shadow flex flex-col justify-between">
           <div>
             <div className="text-xs text-gray-500">Obiettivo settimanale</div>
-            <div className="text-2xl font-semibold">{/* placeholder */}—</div>
+            <div className="text-2xl font-semibold">{profile?.goal ? formatWeeklyGoal(profile.goal) : '—'}</div>
           </div>
-          <div className="text-sm text-gray-500 mt-2">Imposta il tuo obiettivo nel profilo</div>
+          <div className="text-sm text-gray-500 mt-2">{profile?.goal ? 'Obiettivo impostato nel profilo' : 'Imposta il tuo obiettivo nel profilo'}</div>
         </div>
       </div>
 

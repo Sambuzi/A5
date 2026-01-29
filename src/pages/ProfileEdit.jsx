@@ -10,7 +10,7 @@ export default function ProfileEdit(){
   const [error, setError] = useState(null)
   const [fullName, setFullName] = useState('')
   const [level, setLevel] = useState('Neofita')
-  const [goal, setGoal] = useState('30 min/die')
+  const [goal, setGoal] = useState('30 min')
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [avatarFile, setAvatarFile] = useState(null)
   const navigate = useNavigate()
@@ -37,7 +37,7 @@ export default function ProfileEdit(){
             setFullName(profileRow.full_name || user.email)
             setAvatarUrl(profileRow.avatar_url || null)
             setLevel(profileRow.level || 'Neofita')
-            setGoal(profileRow.goal || '30 min/die')
+            setGoal(profileRow.goal || '30 min')
           }
         } else {
           if(mounted) setFullName(user.email)

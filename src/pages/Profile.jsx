@@ -19,7 +19,7 @@ export default function Profile(){
   const [previewUrl, setPreviewUrl] = useState(null)
   const [nameEdit, setNameEdit] = useState('')
   const [levelEdit, setLevelEdit] = useState('Neofita')
-  const [goalEdit, setGoalEdit] = useState('30 min/die')
+  const [goalEdit, setGoalEdit] = useState('30 min')
   const [bioEdit, setBioEdit] = useState('')
   const [workouts, setWorkouts] = useState([])
   const [workoutsLoading, setWorkoutsLoading] = useState(true)

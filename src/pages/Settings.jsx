@@ -218,9 +218,16 @@ export default function Settings(){
               <div className="text-sm">Rendi il tuo profilo visibile agli altri utenti</div>
             </div>
             <div>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={Boolean(isPublic ?? profile?.is_public ?? cachedProfile?.is_public)} onChange={e=>onTogglePublic(Boolean(e.target.checked))} />
-              </label>
+              <div
+                className={`m3-switch ${Boolean(isPublic ?? profile?.is_public ?? cachedProfile?.is_public) ? 'on' : ''}`}
+                tabIndex={0}
+                role="switch"
+                aria-checked={Boolean(isPublic ?? profile?.is_public ?? cachedProfile?.is_public)}
+                onClick={(e)=>{ e.stopPropagation(); onTogglePublic(!Boolean(isPublic ?? profile?.is_public ?? cachedProfile?.is_public)) }}
+                onKeyDown={(e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onTogglePublic(!Boolean(isPublic ?? profile?.is_public ?? cachedProfile?.is_public)) } }}
+              >
+                <span className="thumb" aria-hidden="true"></span>
+              </div>
             </div>
           </div>
         </div>
